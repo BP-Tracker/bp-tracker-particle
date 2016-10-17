@@ -7,7 +7,7 @@
 
 //#define mySerial Serial1
 //Adafruit_GPS gps(&mySerial);
-Adafruit_GPS gps = Adafruit_GPS();
+Adafruit_GPS gpss = Adafruit_GPS();
 Adafruit_LIS3DH accel = Adafruit_LIS3DH(A2);
 
 AssetTracker::AssetTracker(){
@@ -28,15 +28,15 @@ void AssetTracker::begin(){
 }
 
 float AssetTracker::readLat(){
-    return gps.latitude;
+    return gpss.latitude;
 }
 
 float AssetTracker::readLon(){
-    return gps.longitude;
+    return gpss.longitude;
 }
 
 String AssetTracker::readLatLon(){
-    String latLon = String::format("%f,%f",gps.latitudeDegrees,gps.longitudeDegrees);
+    String latLon = String::format("%f,%f",gpss.latitudeDegrees,gpss.longitudeDegrees);
     return latLon;
 }
 
@@ -44,13 +44,13 @@ void AssetTracker::gpsOn(){
     // Power to the GPS is controlled by a FET connected to D6
     pinMode(D6,OUTPUT);
     digitalWrite(D6,LOW);
-    gps.begin(9600);
-    gps.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+    gpss.begin(9600);
+    gpss.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
     delay(500);
     // Default is 1 Hz update rate
-    gps.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+    gpss.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
     delay(500);
-    gps.sendCommand(PGCMD_NOANTENNA);
+    gpss.sendCommand(PGCMD_NOANTENNA);
     delay(500);
 }
 
@@ -59,11 +59,11 @@ void AssetTracker::gpsOff(){
 }
 
 char* AssetTracker::preNMEA(){
-    return gps.lastNMEA();
+    return gpss.lastNMEA();
 }
 
 bool AssetTracker::gpsFix(){
-    if(gps.latitude == 0.0){
+    if(gpss.latitude == 0.0){
         return false;
     }
     else {
@@ -78,15 +78,15 @@ bool AssetTracker::gpsFix(){
 // }
 
 void AssetTracker::updateGPS(){
-    char c = gps.read();
+    char c = gpss.read();
       // if a sentence is received, we can check the checksum, parse it...
-  if (gps.newNMEAreceived()) {
+  if (gpss.newNMEAreceived()) {
     // a tricky thing here is if we print the NMEA sentence, or data
     // we end up not listening and catching other sentences!
     // so be very wary if using OUTPUT_ALLDATA and trytng to print out data
-    //Serial.println(gps.lastNMEA());   // this also sets the newNMEAreceived() flag to false
+    //Serial.println(gpss.lastNMEA());   // this also sets the newNMEAreceived() flag to false
 
-    if (!gps.parse(gps.lastNMEA()))   {
+    if (!gpss.parse(gpss.lastNMEA()))   {
       // this also sets the newNMEAreceived() flag to false
       return;  // we can fail to parse a sentence in which case we should just wait for another
     }
