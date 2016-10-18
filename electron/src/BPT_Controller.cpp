@@ -1,19 +1,44 @@
 #include "BPT_Controller.h"
 
-BPT_Controller::BPT_Controller(application_ctx_t *a)
-  : gps(BPT_GPS(a)),
-    applicationCtx(a),
+BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
+  :
+  #ifdef EXTERNAL_DEVICE_MT3339
+    gpsModule(BPT_GPS_MT3339(applicationCtx)),
+  #else
+    gpsModule(BPT_GPS(applicationCtx)),
+  #endif
+    applicationCtx(applicationCtx),
     controllerMode(CONTROLLER_MODE_NORMAL),
     systemState(STATE_OFFLINE) {
 }
 
 void BPT_Controller::setup(void) {
 
+  systemState = STATE_INIT;
+
+  // state = STATE_INIT;
+  //
+  // sys.init();
+  // gps.init();
+  // //accel.init();
+  // //pmon.init();
+  //
+  // bool enableSuccess = gps.enable();
+  //
+  // if(!enableSuccess){
+  //   // TODO: .....
+  //
+  // }
+
 }
 
 //TODO: complete
 void BPT_Controller::reset(void) {
 
+}
+
+system_state_t BPT_Controller::getState(){
+  return systemState;
 }
 
 // main loop

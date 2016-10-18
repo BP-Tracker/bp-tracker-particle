@@ -1,5 +1,11 @@
 #include "BPT.h"
-#include "BPT_GPS.h"
+
+// GPS module include
+#ifdef EXTERNAL_DEVICE_MT3339
+	#include "BPT_GPS_MT3339.h"
+#else
+	#include "BPT_GPS.h"
+#endif
 
 #ifndef _BPT_Controller_h_
 #define _BPT_Controller_h_
@@ -22,7 +28,7 @@ class BPT_Controller {
 
  	public:
 
-  	BPT_Controller(application_ctx_t *a);
+  	BPT_Controller(application_ctx_t *applicationCtx);
 
     void setup();
 
@@ -36,7 +42,12 @@ class BPT_Controller {
 
 		void loop(void);
 
-    BPT_GPS gps;
+		#ifdef EXTERNAL_DEVICE_MT3339
+			BPT_GPS_MT3339 gpsModule;
+		#else
+			BPT_GPS gpsModule;
+		#endif
+
 
  	private:
     application_ctx_t *applicationCtx;

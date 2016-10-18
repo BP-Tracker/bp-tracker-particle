@@ -37,10 +37,12 @@ typedef struct {
 class BPT_Module {
  	public:
 
-  	BPT_Module(application_ctx_t *a);
+  	BPT_Module(application_ctx_t *applicationCtx);
     virtual ~BPT_Module();
 
   	virtual void init(void) = 0;
+
+		virtual void init(external_device_t *device) = 0;
 
 		virtual bool enable(void) = 0;
 

@@ -2,45 +2,51 @@
 #include "BPT_Controller.h"
 #include "BPT_GPS.h"
 
-
-//BPT_System sys = BPT_System();
-//BPT_GPS gpss = BPT_GPS(sys);
-
-application_ctx_t app_ctx;
+// constants
+int ON_BOARD_LED = D7;
 
 
-BPT_Controller controller = BPT_Controller(&app_ctx);
+application_ctx_t appCtx;
+BPT_Controller controller = BPT_Controller(&appCtx);
 // //BPT_Accelerometer accel = new BPT_Accelerometer(sys);
 // //BPT_PowerMonitor pmon = new BPT_PowerMonitor(sys);
 //
 // system_state_t state;
 
+int getState(String command){
+  system_state_t s = controller.getState();
+  Serial.printf("getState called: [state=%u]", s);
+
+  Particle.publish("bpt:state", String::format("%u", s), 60, PRIVATE);
+
+  return s;
+}
+
 
 void setup() {
+  Serial.begin(9600); // opens up a Serial port
+
+  pinMode(ON_BOARD_LED, OUTPUT);
 
   controller.setup();
 
-  // state = STATE_INIT;
-  //
-  // sys.init();
-  // gps.init();
-  // //accel.init();
-  // //pmon.init();
-  //
-  // bool enableSuccess = gps.enable();
-  //
-  // if(!enableSuccess){
-  //   // TODO: .....
-  //
-  // }
+  //TODO: detect interested modules attached to the hardware
 
+  // These three functions are useful for remote diagnostics. Read more below.
+  Particle.function("bpt:state", getState);
 }
 
 void loop(){
 
   controller.loop();
 
-  // subscribe tp
+  Serial.println("Setting LED HIGH");
+  digitalWrite(ON_BOARD_LED, HIGH);
+  delay(5000);
+
+  Serial.println("Setting LED LOW");
+  digitalWrite(ON_BOARD_LED, LOW);
+  delay(5000);
 
 
 }

@@ -1,7 +1,7 @@
 #include "BPT_Module.h"
 
-BPT_Module::BPT_Module(application_ctx_t *a): applicationCtx(a)
-{ }
+BPT_Module::BPT_Module(application_ctx_t *applicationCtx)
+  : applicationCtx(applicationCtx){ }
 
 BPT_Module::~BPT_Module() {}
 
