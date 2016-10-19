@@ -1,17 +1,24 @@
 //#include "Particle_AssetTracker.h"
-#include "BPT_Controller.h"
+#include "BPT.h"
 #include "BPT_GPS.h"
+#include "BPT_Controller.h"
 
-// constants
+/*********************************************
+  Constants
+*********************************************/
 int ON_BOARD_LED = D7;
 
 
+/*********************************************
+  Application variables
+*********************************************/
+extern external_device_t devices[EXTERNAL_DEVICE_COUNT];
 application_ctx_t appCtx;
 BPT_Controller controller = BPT_Controller(&appCtx);
-// //BPT_Accelerometer accel = new BPT_Accelerometer(sys);
-// //BPT_PowerMonitor pmon = new BPT_PowerMonitor(sys);
-//
-// system_state_t state;
+
+/*********************************************
+  Functions
+*********************************************/
 
 int getState(String command){
   system_state_t s = controller.getState();
@@ -28,9 +35,9 @@ void setup() {
 
   pinMode(ON_BOARD_LED, OUTPUT);
 
-  controller.setup();
+  appCtx.devices = devices;
 
-  //TODO: detect interested modules attached to the hardware
+  controller.setup();
 
   // These three functions are useful for remote diagnostics. Read more below.
   Particle.function("bpt:state", getState);

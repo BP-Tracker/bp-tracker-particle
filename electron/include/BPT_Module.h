@@ -34,7 +34,7 @@ typedef struct {
 } mod_status_t;
 
 
-class BPT_Module {
+class BPT_Module: public BPT {
  	public:
 
   	BPT_Module(application_ctx_t *applicationCtx);
@@ -60,7 +60,7 @@ class BPT_Module {
 
     void setStatusMsg(char *msg);
 
-    application_ctx_t *applicationCtx;
+    //application_ctx_t *applicationCtx;
 
   protected:
     mod_status_t mod_status;

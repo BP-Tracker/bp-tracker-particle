@@ -24,7 +24,7 @@ typedef enum {
 } controller_mode_t;
 
 
-class BPT_Controller {
+class BPT_Controller: public BPT {
 
  	public:
 
@@ -42,18 +42,16 @@ class BPT_Controller {
 
 		void loop(void);
 
+		// TODO: would it be better if allocation was dynamic?
 		#ifdef EXTERNAL_DEVICE_MT3339
 			BPT_GPS_MT3339 gpsModule;
 		#else
 			BPT_GPS gpsModule;
 		#endif
 
-
  	private:
-    application_ctx_t *applicationCtx;
     controller_mode_t controllerMode;
 		system_state_t systemState;
-
 };
 
 #endif
