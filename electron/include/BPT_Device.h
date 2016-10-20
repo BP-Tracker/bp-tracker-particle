@@ -13,7 +13,7 @@
 #define EXTERNAL_DEVICE_COUNT 3
 
 typedef enum {
-	DEVICE_TYPE_GPS   	       = ((uint8_t)0x01),
+	DEVICE_TYPE_GPS            = ((uint8_t)0x01),
 	DEVICE_TYPE_ACCELEROMETER  = ((uint8_t)0x02),
 	DEVICE_TYPE_OTHER          = ((uint8_t)0x03)
 } external_device_type_t;

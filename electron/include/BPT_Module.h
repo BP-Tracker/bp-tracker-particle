@@ -1,27 +1,17 @@
-/**************************************************************************/
-/*!
-    @file     BPT_Module.h
-    @author   Derek Benda
-    @license  LPGL (see Licence.txt)
-
-    v1.0  - First release
-*/
-/**************************************************************************/
 #include "BPT.h"
 
 #ifndef _BPT_Module_h_
 #define _BPT_Module_h_
 
 // TODO: do we need all these?
-#define  MOD_STATUS_ONLINE               ((uint16_t)0x0001)
-#define  MOD_STATUS_OFFLINE 					   ((uint16_t)0x0002)
+#define  MOD_STATUS_RESERVED             ((uint16_t)0x0001) //???
+#define  MOD_STATUS_ONLINE  					   ((uint16_t)0x0002)
 #define  MOD_STATUS_IDLE                 ((uint16_t)0x0004)
 #define  MOD_STATUS_ACTIVE               ((uint16_t)0x0008)
 #define  MOD_STATUS_ERROR                ((uint16_t)0x0010)
 #define  MOD_STATUS_SLEEP                ((uint16_t)0x0040)
-#define  MOD_STATUS_AVAILABLE            ((uint16_t)0x0080)
+#define  MOD_STATUS_AVAILABLE            ((uint16_t)0x0080) //????
 #define  MOD_STATUS_ENABLED              ((uint16_t)0x0100)
-#define  MOD_STATUS_DISABLED             ((uint16_t)0x0200)
 
 #define MODULE_STATUS_MSG_MAX_LENGTH 128
 
@@ -48,17 +38,25 @@ class BPT_Module: public BPT {
 
     virtual bool disable(void) = 0;
 
-    virtual bool reset(void) = 0;
+    virtual bool reset(void) = 0; // TODO: what state should the module be in?
+
+		virtual void shutdown(void) = 0;
 
     bool getStatus(uint16_t mask);
 
     void setStatus(uint16_t status);
 
-    void resetStatus(uint16_t status);
+		void setStatus(uint16_t status, const char *msg);
+
+    void clearStatus(uint16_t status);
+
+		// give the module a chance to maintain state and return an
+		// error if something went off.
+		virtual bool update();
 
     char *getStatusMsg();
 
-    void setStatusMsg(char *msg);
+    void setStatusMsg(const char *msg);
 
     //application_ctx_t *applicationCtx;
 

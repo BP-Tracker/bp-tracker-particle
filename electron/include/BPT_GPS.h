@@ -23,8 +23,12 @@ class BPT_GPS: public BPT_Module {
 
     virtual bool reset(void);
 
+    virtual void shutdown(void);
+
+    virtual bool update(void);
+
     // returns true if module has a GPS fix and coords have been updated
-    virtual bool getGPSCoord(gps_coord_t *gpsCoord);
+    virtual int getGpsCoord(gps_coord_t *gpsCoord); // base class return test data
 
     float getDistanceTo(gps_coord_t *gpsCoord);
 

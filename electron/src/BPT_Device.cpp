@@ -1,13 +1,10 @@
 #include "BPT_Device.h"
 
 
-//uint16_t (*wiring_pins)[]; //size is determined by the device
-
-
 /* GPS MT3339:
     Power to the GPS is controlled by a FET connected to D6
 */
-uint16_t gps_mt[] = { D6 }; // power pin
+uint16_t gps_mt[] = { D6 }; // [power pin]
 
 external_device_t devices[EXTERNAL_DEVICE_COUNT] = {
   {

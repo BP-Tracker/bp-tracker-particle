@@ -22,12 +22,22 @@ class BPT_GPS_MT3339: public BPT_GPS {
 
     bool reset(void);
 
+    void shutdown(void);
+
+    bool update(void);
+
     // returns true if module has a GPS fix and coords have been updated
-    bool getGPSCoord(gps_coord_t *gpsCoord);
+    int getGpsCoord(gps_coord_t *gpsCoord);
 
   protected:
 
     static Adafruit_GPS driver;
+
+  private:
+
+    // if this is enabled, then the module will not turn on the GPS
+    bool simulationMode;
+    external_device_t *device;
 
 };
 

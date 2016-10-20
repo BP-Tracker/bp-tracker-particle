@@ -10,9 +10,16 @@ bool BPT_Module::getStatus(uint16_t mask){
 }
 
 void BPT_Module::setStatus(uint16_t status){
+
+  // TODO: auto clear msg?
 }
 
-void BPT_Module::resetStatus(uint16_t status){
+// NB: const char *msg: cannot modify the pointer to msg
+void BPT_Module::setStatus(uint16_t status, const char *msg){
+
+}
+
+void BPT_Module::clearStatus(uint16_t status){
 
 }
 
@@ -20,6 +27,10 @@ char *BPT_Module::getStatusMsg(){
   return nullptr;
 }
 
-void BPT_Module::setStatusMsg(char *msg){
+bool BPT_Module::update(){
+  return true; // noop
+}
+
+void BPT_Module::setStatusMsg(const char *msg){
 
 }

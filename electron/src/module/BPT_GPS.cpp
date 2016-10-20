@@ -5,11 +5,19 @@ BPT_GPS::BPT_GPS(application_ctx_t *applicationCtx)
 
 BPT_GPS::~BPT_GPS(){ }
 
-// default implementation (no GPS module avaialbe)
+// default implementation
 void BPT_GPS::init(void){
 }
 
 void BPT_GPS::init(external_device_t *device){
+}
+
+void BPT_GPS::shutdown(){
+
+}
+
+bool BPT_GPS::update(void){
+  return true;
 }
 
 bool BPT_GPS::enable(void){
@@ -24,8 +32,8 @@ bool BPT_GPS::reset(void){
   return false;
 }
 
-bool BPT_GPS::getGPSCoord(gps_coord_t *gpsCoord){
-  return false;
+int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord){
+  return 0;
 }
 
 float BPT_GPS::getDistanceTo(gps_coord_t *gpsCoord){

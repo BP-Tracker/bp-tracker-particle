@@ -9,16 +9,11 @@ bool BPT::registerProperty(application_property_t prop, BPT *owner){
   return false; //TODO
 }
 
-template<class T>
-bool BPT::saveProperty(application_property_t prop, T& value){
-  return false; //TODO
+// template<class T>
+// T BPT::getProperty(application_property_t prop, T defaultValue){
+//   //TODO
+//   return defaultValue;
+// }
 
-}
-
-template<class T>
-T BPT::getProperty(application_property_t prop, T& defaultValue){
-  //TODO
-  return defaultValue;
-}
 
 BPT_Storage BPT::storage = BPT_Storage();
