@@ -14,7 +14,7 @@ class BPT_GPS_MT3339: public BPT_GPS {
 
     void init();
 
-    void init(external_device_t *device);
+    void init(external_device_t *dev);
 
     bool enable(void);
 

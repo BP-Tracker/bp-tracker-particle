@@ -39,8 +39,8 @@ class BPT_Controller: public BPT {
 		#endif
 
  	private:
-		controller_mode_t mode;
-		controller_state_t state;
+		controller_mode_t cMode;
+		controller_state_t cState;
 };
 
 #endif

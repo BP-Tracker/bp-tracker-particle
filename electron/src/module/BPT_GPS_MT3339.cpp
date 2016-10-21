@@ -42,6 +42,7 @@ bool BPT_GPS_MT3339::disable(void){
 
 bool BPT_GPS_MT3339::update(void){
   //char c = driver.read();
+
   driver.read();
     // if a sentence is received, we can check the checksum, parse it...
   if (driver.newNMEAreceived()) {
@@ -64,8 +65,8 @@ bool BPT_GPS_MT3339::reset(void){
   return false;
 }
 
-void BPT_GPS_MT3339::init(external_device_t *device){ //TODO
-  device = device;
+void BPT_GPS_MT3339::init(external_device_t *dev){ //TODO
+  device = dev;
 
   if(device->type != DEVICE_TYPE_GPS){
     const char *m = "Device type not supported";
@@ -80,6 +81,7 @@ void BPT_GPS_MT3339::init(void){
   if(device == 0){
     const char *m = "Cannot call init without an external_device_t";
     setStatus(MOD_STATUS_ERROR, m);
+    return;
   }
 
   uint16_t powerPin = device->wiring_pins[0];
@@ -100,8 +102,6 @@ void BPT_GPS_MT3339::shutdown(void){
 }
 
 int BPT_GPS_MT3339::getGpsCoord(gps_coord_t *gpsCoord){
-  return 0;
-
   if(driver.latitude == 0.0){ // no GPS fix
     return 0;
   }

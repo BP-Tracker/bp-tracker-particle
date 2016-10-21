@@ -7,8 +7,8 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   #else
     gpsModule(BPT_GPS(applicationCtx)),
   #endif
-    mode(CONTROLLER_MODE_NORMAL),
-    state(STATE_INIT) {
+    cMode(CONTROLLER_MODE_NORMAL),
+    cState(STATE_INIT) {
 }
 
 bool BPT_Controller::getGpsCoord(gps_coord_t *c){
@@ -20,18 +20,23 @@ void BPT_Controller::setup(void) {
   //TODO: check result
   registerProperty(PROP_CONTROLLER_MODE, this);
 
-  mode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_NORMAL);
-  state = STATE_INIT;
+  cMode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_NORMAL);
+  cState = STATE_INIT;
 
-  if (EXTERNAL_DEVICE_MT3339){
+  #ifdef EXTERNAL_DEVICE_MT3339
     gpsModule.init( &(applicationCtx->devices[EXTERNAL_DEVICE_MT3339]) );
-  }else{
+  #else
     gpsModule.init();
-  }
+  #endif
 
 
   //TODO: check return
   gpsModule.enable();
+
+  ///Serial.printf("BPT_Controller::setup enabled GPS [return=%s]\n", r == true ? "T" : "F");
+
+
+  //Serial.printf("gps module enable status=[%s]\n", r == true ? "T" : "F");
 
 
 
@@ -67,19 +72,19 @@ void BPT_Controller::reset(void) {
 }
 
 bool BPT_Controller::setState(controller_state_t s){
-  state = s;
+  cState = s;
   return true;
 }
 
 controller_state_t BPT_Controller::getState(){
-  return state;
+  return cState;
 }
 
 bool BPT_Controller::setMode(controller_mode_t m){
-  mode = m;
+  cMode = m;
   return true;
 }
 
 controller_mode_t BPT_Controller::getMode(void){
-  return mode;
+  return cMode;
 }

@@ -1,6 +1,6 @@
 #include "BPT.h"
 BPT::BPT(application_ctx_t *applicationCtx)
-  : BPT(applicationCtx) {  }
+  : applicationCtx(applicationCtx) {  }
 
 BPT::~BPT(){}
 

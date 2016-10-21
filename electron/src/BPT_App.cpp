@@ -39,7 +39,12 @@ int getGpsCoord(String command){
 
   Serial.printf("getGPSCoord called: [status=%u][lat=%f][log=%f]", r, lat, lon);
 
-  Particle.publish("bpt:gps", String::format("%f,%f", lat, lon), 60, PRIVATE);
+  if(r <= 0){
+    Particle.publish("bpt:gps", String::format("%f,%f", lat, lon), 60, PRIVATE);
+  }else{
+     //TODO: perhaps send something else ?
+    Particle.publish("bpt:gps", "0,0", 60, PRIVATE);
+  }
   return r;
 }
 
@@ -51,6 +56,8 @@ void setup() {
 
   appCtx.devices = devices;
 
+  //delay(10000);
+
   controller.setup();
 
   // These three functions are useful for remote diagnostics. Read more below.
@@ -59,8 +66,15 @@ void setup() {
 }
 
 void loop(){
-
   controller.loop();
+  //bool gpsOnline = controller.gpsModule.getStatus(MOD_STATUS_ONLINE);
+
+  int ver = appCtx.devices[0].version;
+  uint16_t status = controller.gpsModule.mod_status.status;
+  char *message = controller.gpsModule.mod_status.message;
+
+  Serial.printf("GPS module [version=%i][status=%u][message=%s]\n",
+    ver, status, message);
 
   Serial.println("Setting LED HIGH");
   digitalWrite(ON_BOARD_LED, HIGH);

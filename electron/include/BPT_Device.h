@@ -10,7 +10,7 @@
 #define EXTERNAL_DEVICE_LIS3DH 1
 #define EXTERNAL_DEVICE_ASSET_TRACKER 2
 
-#define EXTERNAL_DEVICE_COUNT 3
+#define EXTERNAL_DEVICE_COUNT 1
 
 typedef enum {
 	DEVICE_TYPE_GPS            = ((uint8_t)0x01),

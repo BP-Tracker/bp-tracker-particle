@@ -58,9 +58,6 @@ class BPT_Module: public BPT {
 
     void setStatusMsg(const char *msg);
 
-    //application_ctx_t *applicationCtx;
-
-  protected:
     mod_status_t mod_status;
 
 };
