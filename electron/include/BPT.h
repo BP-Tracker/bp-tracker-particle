@@ -57,9 +57,9 @@ typedef struct {
 
 // calculations taken from http://movable-type.co.uk/scripts/latlong.html
 typedef enum {
-	HAVERSINE_FORMULA       = ((uint8_t)0x00),
-	LAW_OF_COSINES_FORMULA  = ((uint8_t)0x01),
-  EQUIRECT_APPROXIMATION  = ((uint8_t)0x02),
+	HAVERSINE_FORMULA       = ((uint8_t)0x01),
+	LAW_OF_COSINES_FORMULA  = ((uint8_t)0x02),
+  EQUIRECT_APPROXIMATION  = ((uint8_t)0x03),
 } distance_calc_t;
 
 

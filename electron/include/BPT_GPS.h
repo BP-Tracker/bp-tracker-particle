@@ -3,7 +3,16 @@
 #ifndef BPT_GPS_h
 #define BPT_GPS_h
 
-#define DEFAULT_DISTANCE_CALC = ((uint8_t)0x00); // HAVERSINE_FORMULA
+// Default GPS point-to-point distance formula (HAVERSINE_FORMULA)
+#define DEFAULT_DISTANCE_CALC ((uint8_t)0x01)
+
+// Geofence radius in meters
+#define DEFAULT_GEOFENCE_RADIUS 500
+
+// Mean radius of Earth in meters
+#define MEAN_EARTH_RADIUS 6371e+3
+
+#define MATH_PI_CONSTANT 3.141592653
 
 class BPT_GPS: public BPT_Module {
 
@@ -33,6 +42,12 @@ class BPT_GPS: public BPT_Module {
     float getDistanceTo(gps_coord_t *gpsCoord);
 
     float getDistanceTo(gps_coord_t *gpsCoord, distance_calc_t formula);
+
+  private:
+
+    float toRadians(float degrees);
+
+    float toDegrees(float radians);
 
 };
 

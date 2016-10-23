@@ -1,6 +1,6 @@
 /*
-  Portions of logic is taken from particle.io's AssetTracker library
-  https://github.com/spark/AssetTracker
+  Portions of logic taken from particle.io's AssetTracker library
+  (https://github.com/spark/AssetTracker)
 */
 #include "BPT_GPS_MT3339.h"
 
@@ -102,16 +102,18 @@ void BPT_GPS_MT3339::shutdown(void){
 }
 
 int BPT_GPS_MT3339::getGpsCoord(gps_coord_t *gpsCoord){
-  if(driver.latitude == 0.0){ // no GPS fix
+  /*
+  if(driver.satellites <= 0){ // no GPS fix
     return 0;
   }
+  */
 
   memset(gpsCoord, 0, sizeof(gps_coord_t)); // clears the data
 
-  gpsCoord->lat = driver.latitude;
-  gpsCoord->lon = driver.longitude;
+  gpsCoord->lat = driver.latitudeDegrees;
+  gpsCoord->lon = driver.longitudeDegrees;
 
-  return 1; //TODO: return the number of fixed satellites
+  return driver.satellites; //TODO: return the number of fixed satellites
 }
 
 Adafruit_GPS BPT_GPS_MT3339::driver = Adafruit_GPS();
