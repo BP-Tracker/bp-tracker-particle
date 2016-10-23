@@ -4,17 +4,17 @@
 #define BPT_Device_h
 
 // External device configuration/wiring
-// add configuration for all external devices here
-//  the value is the array index position into devicesConfig
+// add configs for all external devices here
+//  the value maps to an array index on devices (BPT_Devices.cpp)
 #define EXTERNAL_DEVICE_MT3339 0
 #define EXTERNAL_DEVICE_LIS3DH 1
 #define EXTERNAL_DEVICE_ASSET_TRACKER 2
 
-#define EXTERNAL_DEVICE_COUNT 1
+#define EXTERNAL_DEVICE_COUNT 3
 
 typedef enum {
 	DEVICE_TYPE_GPS            = ((uint8_t)0x01),
-	DEVICE_TYPE_ACCELEROMETER  = ((uint8_t)0x02),
+	DEVICE_TYPE_ACCEL          = ((uint8_t)0x02),
 	DEVICE_TYPE_OTHER          = ((uint8_t)0x03)
 } external_device_type_t;
 

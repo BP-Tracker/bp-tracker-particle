@@ -1,6 +1,5 @@
-/*
-  Portions of logic taken from particle.io's AssetTracker library
-  (https://github.com/spark/AssetTracker)
+/* Logic borrowed from particle.io's AssetTracker library
+  	(https://github.com/spark/AssetTracker)
 */
 #include "BPT_GPS_MT3339.h"
 

@@ -23,6 +23,12 @@ typedef struct {
 	char message[MODULE_STATUS_MSG_MAX_LENGTH];
 } mod_status_t;
 
+typedef enum {
+	MODULE_TYPE_GPS            = ((uint8_t)0x01),
+	MODULE_TYPE_ACCELEOMETER   = ((uint8_t)0x02),
+	MODULE_TYPE_OTHER          = ((uint8_t)0x03),
+} mod_type_t;
+
 
 class BPT_Module: public BPT {
  	public:
@@ -42,6 +48,8 @@ class BPT_Module: public BPT {
 
 		virtual void shutdown(void) = 0;
 
+		virtual mod_type_t getType(void) = 0;
+
     bool getStatus(uint16_t mask);
 
     void setStatus(uint16_t status);
@@ -57,6 +65,8 @@ class BPT_Module: public BPT {
     char *getStatusMsg();
 
     void setStatusMsg(const char *msg);
+
+		// returns the type of module
 
     mod_status_t mod_status;
 

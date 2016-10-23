@@ -42,6 +42,11 @@ int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord){
   return 0;
 }
 
+mod_type_t BPT_GPS::getType(void){
+  mod_type_t t = MODULE_TYPE_GPS;
+  return t;
+}
+
 // uses the default distance formula (DEFAULT_DISTANCE_CALC)
 // (also see www.movable-type.co.uk/scripts/latlong.html)
 float BPT_GPS::getDistanceTo(gps_coord_t *gpsCoord){

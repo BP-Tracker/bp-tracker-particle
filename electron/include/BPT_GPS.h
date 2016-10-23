@@ -36,6 +36,8 @@ class BPT_GPS: public BPT_Module {
 
     virtual bool update(void);
 
+    mod_type_t getType(void);
+
     // returns true if module has a GPS fix and coords have been updated
     virtual int getGpsCoord(gps_coord_t *gpsCoord); // base class return test data
 

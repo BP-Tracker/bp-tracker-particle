@@ -55,6 +55,12 @@ typedef struct {
 	float lon; // in degrees
 } gps_coord_t;
 
+typedef struct {
+	float x;
+	float y;
+	float z;
+} accel_t;
+
 // calculations taken from http://movable-type.co.uk/scripts/latlong.html
 typedef enum {
 	HAVERSINE_FORMULA       = ((uint8_t)0x01),
@@ -75,6 +81,14 @@ class BPT {
 		~BPT();
 
     bool registerProperty(application_property_t prop, BPT *owner);
+
+		//TODO
+		// template<class T>
+		// bool registerProperty(application_property_t prop, BPT *owner,
+		// 	T minValue, T maxValue){
+		// 		//TODO
+		// 		return false;
+		// } or use a function pointer to get the min/max?
 
 		template<class T>
   	bool saveProperty(application_property_t prop, T& value){
