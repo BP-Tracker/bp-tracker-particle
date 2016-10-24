@@ -26,8 +26,7 @@ class BPT_Accel_LIS3DH: public BPT_Accel {
 
     bool update(void);
 
-    // returns true if module has a GPS fix and coords have been updated
-    int getGpsCoord(gps_coord_t *gpsCoord);
+    int getAcceleration(accel_t *accel);
 
   protected:
 

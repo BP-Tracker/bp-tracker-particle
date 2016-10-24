@@ -20,9 +20,10 @@
 
 // Do not change the order (number is a index into an array)
 typedef enum {
-	PROP__RESERVED        = (0),
-	PROP_CONTROLLER_MODE  = (1),
-	PROP_GEO_FENCE_RADIUS = (2)
+	PROP__RESERVED        = (0), /* */
+	PROP_CONTROLLER_MODE  = (1), /* */
+	PROP_GEO_FENCE_RADIUS = (2), /* */
+	PROP_ACCEL_THRESHOLD  = (3)  /* */
 } application_property_t;
 
 typedef enum {

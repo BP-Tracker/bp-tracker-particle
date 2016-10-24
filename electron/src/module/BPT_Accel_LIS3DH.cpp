@@ -18,7 +18,8 @@ bool BPT_Accel_LIS3DH::enable(void){
     return true;
   }
 
-  // TODO
+  //TODO
+
   return true;
 }
 
@@ -57,22 +58,36 @@ void BPT_Accel_LIS3DH::init(void){
     setStatus(MOD_STATUS_ERROR, m);
     return;
   }
-	//TODO
-  // uint16_t powerPin = device->wiring_pins[0];
-	//
-  // // Power to the GPS is controlled by a FET connected to D6
-  // pinMode(powerPin,OUTPUT);
-  // digitalWrite(powerPin, LOW);
+
+  registerProperty(PROP_ACCEL_THRESHOLD, this);
+
+  driver.begin(LIS3DH_DEFAULT_ADDRESS);
+
+  // Default to 5kHz low-power sampling
+  driver.setDataRate(LIS3DH_DATARATE_LOWPOWER_5KHZ);
+
+  // Default to 4 gravities range
+  driver.setRange(LIS3DH_RANGE_4_G);
 
   setStatus(MOD_STATUS_ONLINE);
 }
 
 void BPT_Accel_LIS3DH::shutdown(void){
-  // if(getStatus(MOD_STATUS_ONLINE)){
-  //   uint16_t powerPin = device->wiring_pins[0];
-  //   digitalWrite(powerPin, HIGH);
-  //   clearStatus(MOD_STATUS_ONLINE);
-  // }
+   if(getStatus(MOD_STATUS_ONLINE)){
+    //TODO
+     clearStatus(MOD_STATUS_ONLINE);
+   }
+}
+
+int BPT_Accel_LIS3DH::getAcceleration(accel_t *accel){
+  driver.read();
+  memset(accel, 0, sizeof(accel_t)); // clears the data
+
+  accel->x = driver.x_g;
+  accel->y = driver.y_g;
+  accel->z = driver.z_g;
+
+  return 1;
 }
 
 // FIXME: find a way to configure the driver pins using external_device_type_t

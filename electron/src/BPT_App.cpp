@@ -8,6 +8,11 @@
 *********************************************/
 int ON_BOARD_LED = D7;
 
+SYSTEM_THREAD(ENABLED); //TODO: is this required?
+
+//TODO
+//PRODUCT_ID(1);
+//PRODUCT_VERSION(1);
 
 /*********************************************
   Application variables
@@ -24,36 +29,12 @@ FuelGauge fuelGauge;
 
 // returns the current state of the controller (controller_state_t type)
 int getState(String command){
-
-  int seperatorIndex = command.lastIndexOf(",");
-  if(seperatorIndex > 0){
-    String latS = command.substring(0, seperatorIndex);
-    String lonS = command.substring(seperatorIndex + 1);
-
-
-    gps_coord_t coord;
-    coord.lat = atof(latS);
-    coord.lon = atof(lonS);
-
-    Serial.printf("getState called: [lat=%f][lon=%f]\n", coord.lat, coord.lon);
-
-    float d = controller.gpsModule.getDistanceTo(
-      &coord, LAW_OF_COSINES_FORMULA);
-
-    Particle.publish("bpt:state", String::format("%f", d), 60, PRIVATE);
-    return 1;
-  }
-  return 0;
-
-
-  /*
   controller_state_t s = controller.getState();
   Serial.printf("getState called: [state=%u]", s);
 
   Particle.publish("bpt:state", String::format("%u", s), 60, PRIVATE);
 
   return s;
-  */
 }
 
 // returns the current state of the controller including
@@ -73,15 +54,60 @@ int getStatus(String command){
     return 0;
 }
 
+// pass the coordinate to the controller for processing
+int _processRemoteGpsCoord(float lat, float lon, String deviceNum){
+  gps_coord_t coord;
+  coord.lat = lat;
+  coord.lon = lon;
+
+  uint8_t devNum = deviceNum.length() > 0 ? atoi(deviceNum) : 1;
+
+  Serial.printf("processRemoteGpsCoord called: [lat=%f][lon=%f][devNum=%u]\n",
+    coord.lat, coord.lon, devNum);
+
+  //float d = controller.gpsModule.getDistanceTo(
+  //  &coord, LAW_OF_COSINES_FORMULA);
+
+  bool r = controller.receive(&coord, devNum);
+  return r == true ? 1 : 0;
+}
+
 /*
-  returns the number of satelites in the gps signal
-  and publishes the coordinates
+  This function has a dual purpose:
+  1 - when GPS coords are passed in, the controller will use it to
+  determine the proximity of the coordinate and update its
+  state accordingly. This is used when the controller publishes a request
+  to remote devices.
+
+  2 - otherwise, it returns the number of satelites in the gps signal
+  and publishes the coords of the device in the format:
+  [deviceId:]latitude,longitude
 
   curl https://api.particle.io/v1/devices/Lippy/bpt:gps
    -d access_token=${particle token list }
+
+  TODO: is this thread safe?
 */
-// TODO: thread safe?
+// accepts GPS coordinates in the format: "[deviceId:]latitude,lonitude"
 int getGpsCoord(String command){
+  String deviceId = "";
+
+  int sep = command.lastIndexOf(",");
+  int deviceSep = command.lastIndexOf(":");
+
+  if( deviceSep > 0){ // found device number (id)
+    deviceId = command.substring(0, deviceSep);
+    deviceSep++;
+  }else{
+    deviceSep = 0;
+  }
+
+  if(sep > 0){ // found GPS coords
+    String latS = command.substring(deviceSep, sep);
+    String lonS = command.substring(sep + 1);
+    return _processRemoteGpsCoord(atof(latS), atof(lonS), deviceId);
+  }
+
   int r = controller.getGpsCoord(&gpsCoord);
   float lat = r == 0 ? 0 : gpsCoord.lat;
   float lon = r == 0 ? 0 : gpsCoord.lon;
@@ -99,6 +125,29 @@ int getGpsCoord(String command){
   return r;
 }
 
+// publishes more information about the state of controller for troubleshooting
+// or diagnostic purposes
+// command : the level of output
+int getDiagnostic(String command){
+  // TODO
+
+  uint32_t freeMem = System.freeMemory();
+  int firmwareVers = System.versionNumber();
+  unsigned long runTime = millis();
+  size_t eepromLen = EEPROM.length();
+
+  return 1;
+}
+
+/*
+  Registers a remote device as a candidate to respond to this controller.
+  This is optional when only one device will be used.
+*/
+int registerRemoteDevice(String command){
+  //TODO
+
+}
+
 
 void setup() {
   Serial.begin(9600); // opens up a Serial port
@@ -114,6 +163,8 @@ void setup() {
   Particle.function("bpt:state", getState);
   Particle.function("bpt:gps", getGpsCoord);
   Particle.function("bpt:status", getStatus);
+  Particle.function("bpt:diag", getDiagnostic);
+  Particle.function("bpt:register", registerRemoteDevice);
 }
 
 void loop(){

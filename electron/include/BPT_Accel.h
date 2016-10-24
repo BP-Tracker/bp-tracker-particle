@@ -31,7 +31,7 @@ class BPT_Accel: public BPT_Module {
     // 0 otherwise
 		virtual int getAcceleration(accel_t *accel);
 
-    int getMagnitude(accel_t *gpsCoord);
+    float getMagnitude(accel_t *accel);
 
   private:
 

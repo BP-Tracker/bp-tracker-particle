@@ -10,6 +10,18 @@
 #ifndef _BPT_Controller_h_
 #define _BPT_Controller_h_
 
+typedef struct {
+	gps_coord_t coord;
+	int date;       		// the date and time coordinate was received
+	uint8_t device; 		// remote device number
+} remote_gps_coord_t;
+
+/*
+	The maximum number of latest points to track. This allows
+	the controller to receive data from potentially multiple devices.
+ */
+#define MAX_REMOTE_GPS_COORDS 4
+
 
 class BPT_Controller: public BPT {
 
@@ -29,6 +41,13 @@ class BPT_Controller: public BPT {
 
 		void loop(void);
 
+		/*
+			Receive a GPS coordinate from a remote device.
+			Whe only one device will respond to events the default device number
+			is 1.
+		*/
+		bool receive(gps_coord_t *coord, uint8_t deviceNumber = 1);
+
 		bool getGpsCoord(gps_coord_t *c);
 
 		// TODO: would it be better if allocation was dynamic?
@@ -41,6 +60,9 @@ class BPT_Controller: public BPT {
  	private:
 		controller_mode_t cMode;
 		controller_state_t cState;
+
+		remote_gps_coord_t remoteGpsCoord[MAX_REMOTE_GPS_COORDS];
+		int remoteGpsIndex; // index of the most recent received coordinate
 };
 
 #endif

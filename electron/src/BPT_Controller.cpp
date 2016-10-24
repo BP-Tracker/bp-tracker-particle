@@ -15,6 +15,11 @@ bool BPT_Controller::getGpsCoord(gps_coord_t *c){
   return gpsModule.getGpsCoord(c);
 }
 
+bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
+  //TODO
+  return false;
+}
+
 void BPT_Controller::setup(void) {
 
   //TODO: check result

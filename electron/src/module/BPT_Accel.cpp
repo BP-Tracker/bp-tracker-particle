@@ -38,7 +38,7 @@ mod_type_t BPT_Accel::getType(void){
   return t;
 }
 
-int BPT_Accel::getMagnitude(accel_t *accel){
+float BPT_Accel::getMagnitude(accel_t *accel){
   return sqrt((accel->x * accel->x) + (accel->y * accel->y)
 		+ (accel->z * accel->z));
 }
