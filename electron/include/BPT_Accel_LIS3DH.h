@@ -4,6 +4,8 @@
 #ifndef BPT_Accel_LIS3DH_h
 #define BPT_Accel_LIS3DH_h
 
+#define DEFAULT_PROP_ACCEL_THRESHOLD 16
+
 class BPT_Accel_LIS3DH: public BPT_Accel {
 
   public:
@@ -25,6 +27,9 @@ class BPT_Accel_LIS3DH: public BPT_Accel {
     void shutdown(void);
 
     bool update(void);
+
+    // Override
+    bool getStatus(uint16_t mask);
 
     int getAcceleration(accel_t *accel);
 

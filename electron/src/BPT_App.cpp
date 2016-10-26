@@ -8,7 +8,7 @@
 *********************************************/
 int ON_BOARD_LED = D7;
 
-SYSTEM_THREAD(ENABLED); //TODO: is this required?
+//SYSTEM_THREAD(ENABLED); //TODO: is this required?
 
 //TODO
 //PRODUCT_ID(1);
@@ -20,6 +20,8 @@ SYSTEM_THREAD(ENABLED); //TODO: is this required?
 extern external_device_t devices[EXTERNAL_DEVICE_COUNT];
 application_ctx_t appCtx;
 gps_coord_t gpsCoord;
+accel_t accelData;
+unsigned long stateTime = 0;
 BPT_Controller controller = BPT_Controller(&appCtx);
 FuelGauge fuelGauge;
 
@@ -81,7 +83,7 @@ int _processRemoteGpsCoord(float lat, float lon, String deviceNum){
 
   2 - otherwise, it returns the number of satelites in the gps signal
   and publishes the coords of the device in the format:
-  [deviceId:]latitude,longitude
+  latitude,longitude
 
   curl https://api.particle.io/v1/devices/Lippy/bpt:gps
    -d access_token=${particle token list }
@@ -130,12 +132,26 @@ int getGpsCoord(String command){
 // command : the level of output
 int getDiagnostic(String command){
   // TODO
-
+  /*
   uint32_t freeMem = System.freeMemory();
   int firmwareVers = System.versionNumber();
   unsigned long runTime = millis();
   size_t eepromLen = EEPROM.length();
+  */
+  uint32_t freeMem = System.freeMemory();
+  uint16_t status = controller.accelModule.mod_status.status;
+  bool s = controller.accelModule.getStatus(MOD_STATUS_INTERRUPT);
+  controller.accelModule.getAcceleration(&accelData);
+  int mag = controller.accelModule.getMagnitude(&accelData);
 
+  Serial.printf("getDiagnostic called: [status=%u][x=%f][y=%f][z=%f][m=%i][mem=%i][it=%i]\n",
+    status, accelData.x, accelData.y, accelData.z, mag, freeMem, s == true ? 1 : 0);
+
+  /*
+  Particle.publish("bpt:diag",
+    String::format("%u,%f,%f,%f, %i", status, a.x, a.y, a.z, mag),
+    60, PRIVATE);
+    */
   return 1;
 }
 
@@ -145,7 +161,7 @@ int getDiagnostic(String command){
 */
 int registerRemoteDevice(String command){
   //TODO
-
+  return -1;
 }
 
 
@@ -171,6 +187,16 @@ void loop(){
   controller.loop();
   //bool gpsOnline = controller.gpsModule.getStatus(MOD_STATUS_ONLINE);
 
+  if (millis() - stateTime > 10000) {
+    stateTime = millis();
+
+    if( digitalRead(WKP) == HIGH){
+      Serial.println("loop[wkp=HIGH]");
+    }else{
+      Serial.println("loop[wkp=LOW]");
+    }
+
+  }
   /*
   int ver = appCtx.devices[0].version;
   uint16_t status = controller.gpsModule.mod_status.status;

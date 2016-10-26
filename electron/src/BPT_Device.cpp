@@ -21,13 +21,15 @@ external_device_t devices[EXTERNAL_DEVICE_COUNT] = {
     DEVICE_TYPE_GPS,        // type
     gps_p,                  // wiring_pins
     1                       // pin count
-  },{
+  },
+  {
     EXTERNAL_DEVICE_LIS3DH, // id - Accelerometer module
     1,                      // version
     DEVICE_TYPE_ACCEL,      // type
     accel_p,                // wiring_pins
     0                      // pin count
-  },{
+  },
+  {
     EXTERNAL_DEVICE_ASSET_TRACKER, // id - Assetracker shield
     1,                      // version
     DEVICE_TYPE_OTHER,      // type

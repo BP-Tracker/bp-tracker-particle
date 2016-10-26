@@ -27,12 +27,18 @@ typedef enum {
 } application_property_t;
 
 typedef enum {
-	STATE_ARMED         = ((uint8_t)0x01),
-	STATE_DISARMED      = ((uint8_t)0x02),
-	STATE_OFFLINE       = ((uint8_t)0x03),
-	STATE_PANIC         = ((uint8_t)0x04),
-	STATE_DEACTIVATED   = ((uint8_t)0x05),
-	STATE_INIT          = ((uint8_t)0x06)
+	STATE_BOOT_WAIT        = ((uint8_t)0x01),
+	STATE_RESET            = ((uint8_t)0x02),
+	STATE_RESET_WAIT       = ((uint8_t)0x03),
+	STATE_INIT             = ((uint8_t)0x04),
+	STATE_ONLINE           = ((uint8_t)0x05), //??
+	STATE_ONLINE_WAIT      = ((uint8_t)0x06),
+	STATE_ARMED            = ((uint8_t)0x07),
+	STATE_DISARMED         = ((uint8_t)0x08),
+	STATE_OFFLINE          = ((uint8_t)0x09),
+	STATE_PANIC            = ((uint8_t)0x0A),
+	STATE_DEACTIVATED      = ((uint8_t)0x0B),
+	STATE_DEACTIVATED_WAIT = ((uint8_t)0x0C)
 } controller_state_t;
 
 typedef enum {

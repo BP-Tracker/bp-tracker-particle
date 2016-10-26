@@ -4,14 +4,15 @@
 #define _BPT_Module_h_
 
 // TODO: do we need all these?
-#define  MOD_STATUS_RESERVED             ((uint16_t)0x0001) //???
+#define  MOD_STATUS_RESERVED             ((uint16_t)0x0001) /*???*/
 #define  MOD_STATUS_ONLINE  					   ((uint16_t)0x0002)
 #define  MOD_STATUS_IDLE                 ((uint16_t)0x0004)
 #define  MOD_STATUS_ACTIVE               ((uint16_t)0x0008)
 #define  MOD_STATUS_ERROR                ((uint16_t)0x0010)
 #define  MOD_STATUS_SLEEP                ((uint16_t)0x0040)
-#define  MOD_STATUS_AVAILABLE            ((uint16_t)0x0080) //????
+#define  MOD_STATUS_AVAILABLE            ((uint16_t)0x0080) /*???*/
 #define  MOD_STATUS_ENABLED              ((uint16_t)0x0100)
+#define  MOD_STATUS_INTERRUPT            ((uint16_t)0x0200)
 
 #define MODULE_STATUS_MSG_MAX_LENGTH 128
 

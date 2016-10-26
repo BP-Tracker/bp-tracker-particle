@@ -6,6 +6,7 @@ BPT_Module::BPT_Module(application_ctx_t *applicationCtx)
 BPT_Module::~BPT_Module() {}
 
 bool BPT_Module::getStatus(uint16_t mask){
+  //FIXME: should we return true if all mask bits are on?
   return (mod_status.status & mask) > 0 ? true : false;
 }
 

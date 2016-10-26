@@ -7,6 +7,11 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   #else
     gpsModule(BPT_GPS(applicationCtx)),
   #endif
+  #ifdef EXTERNAL_DEVICE_LIS3DH
+    accelModule(BPT_Accel_LIS3DH(applicationCtx)),
+  #else
+    accelModule(BPT_Accel(applicationCtx)),
+  #endif
     cMode(CONTROLLER_MODE_NORMAL),
     cState(STATE_INIT) {
 }
@@ -15,9 +20,24 @@ bool BPT_Controller::getGpsCoord(gps_coord_t *c){
   return gpsModule.getGpsCoord(c);
 }
 
+int BPT_Controller::getAcceleration(accel_t *t){
+  return accelModule.getAcceleration(t);
+}
+
 bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
-  //TODO
-  return false;
+  int i = (remoteGpsIndex + 1) % MAX_REMOTE_GPS_COORDS;
+  remote_gps_coord_t c = remoteGpsCoord[i];
+
+  memset(&c, 0, sizeof(remote_gps_coord_t)); // clears the data
+
+  c.date = Time.now();
+  c.coord.lat = coord->lat;
+  c.coord.lon = coord->lon;
+  c.device = deviceNumber;
+
+  remoteGpsIndex = i;
+
+  return true;
 }
 
 void BPT_Controller::setup(void) {
@@ -34,38 +54,23 @@ void BPT_Controller::setup(void) {
     gpsModule.init();
   #endif
 
+  #ifdef EXTERNAL_DEVICE_LIS3DH
+    accelModule.init( &(applicationCtx->devices[EXTERNAL_DEVICE_LIS3DH]) );
+  #else
+    accelModule.init();
+  #endif
+
 
   //TODO: check return
   gpsModule.enable();
-
-  ///Serial.printf("BPT_Controller::setup enabled GPS [return=%s]\n", r == true ? "T" : "F");
-
-
-  //Serial.printf("gps module enable status=[%s]\n", r == true ? "T" : "F");
-
-
-
-  // state = STATE_INIT;
-  //
-  // sys.init();
-  // gps.init();
-  // //accel.init();
-  // //pmon.init();
-  //
-  // bool enableSuccess = gps.enable();
-  //
-  // if(!enableSuccess){
-  //   // TODO: .....
-  //
-  // }
-
+  accelModule.enable();
 }
 
 // main loop
 void BPT_Controller::loop(void) {
 
   gpsModule.update();
-
+  accelModule.update();
 
 }
 

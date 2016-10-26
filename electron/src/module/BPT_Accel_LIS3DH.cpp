@@ -8,6 +8,20 @@ BPT_Accel_LIS3DH::BPT_Accel_LIS3DH(application_ctx_t *applicationCtx)
 
 BPT_Accel_LIS3DH::~BPT_Accel_LIS3DH(){ }
 
+// Override
+bool BPT_Accel_LIS3DH::getStatus(uint16_t mask){
+  // Serial.printf("[LIS3DH_REG_INT1SRC=%u]\n", intSrc);
+
+  // check if wakeup interrupt was generated
+  // TODO: revise the driver API
+  uint8_t intSrc = driver.clearInterrupt(false);
+  if( (intSrc & LIS3DH_INT1_SRC_IA) != 0 ){
+      setStatus(MOD_STATUS_INTERRUPT);
+  }
+
+  return BPT_Accel::getStatus(mask);
+}
+
 bool BPT_Accel_LIS3DH::enable(void){
 
   if(!getStatus(MOD_STATUS_ONLINE)){
@@ -35,8 +49,15 @@ bool BPT_Accel_LIS3DH::update(void){
 
   return true;
 }
-
+/* Resets any interrupts (if it was triggered) */
 bool BPT_Accel_LIS3DH::reset(void){
+  if(getStatus(MOD_STATUS_INTERRUPT)){
+    driver.clearInterrupt(true);
+    clearStatus(MOD_STATUS_INTERRUPT);
+  }
+
+  //TODO:
+
   return false;
 }
 
@@ -61,6 +82,9 @@ void BPT_Accel_LIS3DH::init(void){
 
   registerProperty(PROP_ACCEL_THRESHOLD, this);
 
+  uint8_t threshold = getProperty(
+    PROP_ACCEL_THRESHOLD, DEFAULT_PROP_ACCEL_THRESHOLD);
+
   driver.begin(LIS3DH_DEFAULT_ADDRESS);
 
   // Default to 5kHz low-power sampling
@@ -68,6 +92,10 @@ void BPT_Accel_LIS3DH::init(void){
 
   // Default to 4 gravities range
   driver.setRange(LIS3DH_RANGE_4_G);
+
+
+  // Setup wakeup interrupt
+  driver.setupLowPowerWakeMode(threshold);
 
   setStatus(MOD_STATUS_ONLINE);
 }
@@ -89,6 +117,7 @@ int BPT_Accel_LIS3DH::getAcceleration(accel_t *accel){
 
   return 1;
 }
+
 
 // FIXME: find a way to configure the driver pins using external_device_type_t
 Adafruit_LIS3DH BPT_Accel_LIS3DH::driver = Adafruit_LIS3DH( A2 );
