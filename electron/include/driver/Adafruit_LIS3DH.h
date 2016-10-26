@@ -196,7 +196,7 @@ class Adafruit_LIS3DH : public Adafruit_Sensor {
   uint8_t getOrientation(void);
 
   bool setupLowPowerWakeMode(uint8_t movementThreshold);
-  uint8_t clearInterrupt();
+  uint8_t clearInterrupt(bool doClear);
 
   int16_t x, y, z;
   float x_g, y_g, z_g;
@@ -215,6 +215,7 @@ class Adafruit_LIS3DH : public Adafruit_Sensor {
   // SPI
   int8_t _cs, _mosi, _miso, _sck;
 
+  // NB: particle.io variables
   // LIS3DH INT1 is connected to this pin
   int intPin = WKP;
   uint8_t int1_cfg;

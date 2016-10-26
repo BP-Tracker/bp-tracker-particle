@@ -283,6 +283,7 @@ void Adafruit_LIS3DH::getSensor(sensor_t *sensor) {
 
 /**************************************************************************/
 /*!
+   NB: particle.io function
     @brief  Enable wake-on-move mode
 
     The movementThreshold value default is 16. Lower values are more sensitive.
@@ -346,16 +347,17 @@ bool Adafruit_LIS3DH::setupLowPowerWakeMode(uint8_t movementThreshold) {
 
 /**************************************************************************/
 /*!
+   NB: particle.io function
     @brief  When using setupLowPowerWakeMode to sleep until moved, this clears
     the interrupt on the WKP pin. Manual reset mode is used so you can tell the
     difference between timeout and movement wakeup when using stop mode sleep.
 */
 /**************************************************************************/
 
-uint8_t Adafruit_LIS3DH::clearInterrupt() {
+uint8_t Adafruit_LIS3DH::clearInterrupt(bool doClear) {
 	uint8_t int1_src = readRegister8(LIS3DH_REG_INT1SRC);
 
-	if (intPin >= 0) {
+	if (doClear && intPin >= 0) {
 		while(digitalRead(intPin) == HIGH) {
 			delay(10);
 			readRegister8(LIS3DH_REG_INT1SRC);
@@ -445,12 +447,13 @@ uint8_t Adafruit_LIS3DH::readRegister8(uint8_t reg) {
   return value;
 }
 
-
+// NB: particle.io functions
 void Adafruit_LIS3DH::beginTransaction() {
     SPI.setBitOrder(MSBFIRST);
     SPI.setClockSpeed(500000);
     SPI.setDataMode(SPI_MODE0);
 }
 
+// NB: particle.io functions
 void Adafruit_LIS3DH::endTransaction() {
 }
