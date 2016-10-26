@@ -1,3 +1,4 @@
+#include "application.h"
 /*
 	Compile: particle compile electron failsafe.cpp
 	Upload: particle serial --flash electron_firmware_xxxx.bin or,
