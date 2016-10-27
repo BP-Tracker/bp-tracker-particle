@@ -1,5 +1,5 @@
 /*
-  Distance formulas from: http://www.moveable-type.co.uk
+  Formulas are from: http://www.moveable-type.co.uk
   (https://github.com/chrisveness/geodesy)
 */
 

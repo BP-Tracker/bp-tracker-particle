@@ -14,6 +14,9 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   #endif
     cMode(CONTROLLER_MODE_NORMAL),
     cState(STATE_INIT) {
+
+	//TODO: initialize buffers
+
 }
 
 bool BPT_Controller::getGpsCoord(gps_coord_t *c){
@@ -30,7 +33,7 @@ bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
 
   memset(&c, 0, sizeof(remote_gps_coord_t)); // clears the data
 
-  c.date = Time.now();
+  c.datetime = Time.now();
   c.coord.lat = coord->lat;
   c.coord.lon = coord->lon;
   c.device = deviceNumber;
@@ -38,6 +41,13 @@ bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
   remoteGpsIndex = i;
 
   return true;
+}
+
+bool BPT_Controller::receive(application_event_t e, const char *data,
+	uint8_t deviceNumber){
+	// TODO
+
+	return true;
 }
 
 void BPT_Controller::setup(void) {
@@ -66,11 +76,19 @@ void BPT_Controller::setup(void) {
   accelModule.enable();
 }
 
-// main loop
+// main controller logic
 void BPT_Controller::loop(void) {
 
   gpsModule.update();
   accelModule.update();
+
+	if(publishEventCount >= PUBLISH_EVENT_BUFFER_SIZE - 1
+	 	|| ackEventCount >= ACK_EVENT_BUFFER_SIZE - 1){
+		// The buffers are full, allow the controller time
+		// to process them
+
+		//TODO
+	 }
 
 }
 
@@ -83,7 +101,7 @@ void BPT_Controller::reset(void) {
 
 bool BPT_Controller::setState(controller_state_t s){
   cState = s;
-  return true;
+  return true; // return true if the state was changed
 }
 
 controller_state_t BPT_Controller::getState(){
@@ -97,4 +115,23 @@ bool BPT_Controller::setMode(controller_mode_t m){
 
 controller_mode_t BPT_Controller::getMode(void){
   return cMode;
+}
+
+
+bool BPT_Controller::publish(application_event_t event,
+		const char *data, bool ackRequired,
+		uint8_t forDeviceNum, int _numOfFreeSlots){
+
+	if( ( ackRequired &&
+				ackEventCount > (ACK_EVENT_BUFFER_SIZE - _numOfFreeSlots)
+			) || ( !ackRequired && publishEventCount
+								> (PUBLISH_EVENT_BUFFER_SIZE - _numOfFreeSlots) ) ){
+		return false; // no room
+	}
+
+	return false;
+}
+
+int BPT_Controller::_processPublishEvent(){
+	return 0;
 }
