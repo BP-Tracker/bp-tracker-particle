@@ -4,7 +4,7 @@
 */
 
 #include "BPT_GPS.h"
-#include <cmath>
+#include "math.h"
 
 BPT_GPS::BPT_GPS(application_ctx_t *applicationCtx)
   : BPT_Module(applicationCtx){ }

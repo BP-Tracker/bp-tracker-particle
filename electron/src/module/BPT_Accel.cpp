@@ -1,5 +1,5 @@
 #include "BPT_Accel.h"
-#include <cmath>
+#include "math.h"
 
 BPT_Accel::BPT_Accel(application_ctx_t *applicationCtx)
   : BPT_Module(applicationCtx){ }
