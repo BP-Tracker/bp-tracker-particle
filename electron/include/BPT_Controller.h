@@ -32,9 +32,9 @@ typedef struct {
 
 typedef struct {
 	publish_event_t publishEvent;
-	uint16_t numOfRetries;
-	int lastSent;
-	bool ackReceived;
+	uint16_t publishCount;
+	bool ackNotReceived; // reversed logic so zeroing the struct frees the slot
+	int lastPublish;
 } ack_event_t;
 
 
@@ -46,16 +46,34 @@ typedef struct {
 
 /*
 		Maximum number of ack events to wait for so the controller
-		can re-republish them when necessary.
-		The controller will slow down when this buffer fills up
+		can republish them when necessary.
+		The controller will slow down when this buffer fills up.
+		See also CHECK_ACK_QUEUE_FREQUENCY.
 */
 #define ACK_EVENT_BUFFER_SIZE 5
+
+/*
+	The minimum elepased time (ms) before processing
+	the publish queue
+*/
+#define CHECK_PUBLISH_QUEUE_FREQUENCY 2000
+
+/*
+	The minimum elepased time (ms) before processing
+	the ack event queue
+*/
+#define CHECK_ACK_QUEUE_FREQUENCY 5000
 
 /*
 	The maximum number of cloud publishes permitted at one time. This is
 	restricted to particle.io's API
 */
 #define MAX_SEQUENTIAL_PUBLISH 4
+
+/*
+	The time to wait in ms before publishing another set of events
+*/
+#define SEQUENTIAL_PUBLISH_COOLDOWN 5000
 
 /*
 	The maximum number of recent coordinates to track. This allows
@@ -146,22 +164,30 @@ class BPT_Controller: public BPT {
 			BPT_Accel accelModule;
 		#endif
 
+		//TODO: move to private later
+		int publishEventCount = 0;
+		int ackEventCount = 0;
+
  	private:
 		controller_mode_t cMode;   /* current controller mode */
 		controller_state_t cState; /* current state */
 		controller_state_t pState; /* previous state */
 		int stateTime;
 
-		// return the number of events process (if any)
-		// this uses particle.io's cloud publishing services
+		// returns the number of events processed and published (if any)
+		// using particle.io's cloud services
 		int _processPublishEvent();
 
-		publish_event_t publishBuffer[PUBLISH_EVENT_BUFFER_SIZE];
-		int publishEventCount = 0;
+		// looks in ackEventBag for events that haven't yet
+		// received an acknowledgment after a period of time
+		// and resubmits them for publishing
+		int _processAckEvent();
 
-		ack_event_t ackEventBuffer[ACK_EVENT_BUFFER_SIZE];
-		int ackEventCount = 0;
+		// FIFO queue
+		publish_event_t publishEventQueue[PUBLISH_EVENT_BUFFER_SIZE];
+		int publishEventFront = 0;
 
+		ack_event_t ackEventBag[ACK_EVENT_BUFFER_SIZE];
 
 		remote_gps_coord_t remoteGpsCoord[MAX_REMOTE_GPS_COORDS];
 		int remoteGpsIndex = 0; // index of the most recent received coordinate
