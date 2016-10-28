@@ -4,17 +4,17 @@
 #define _BPT_Storage_h_
 
 // typedef enum {
-// 	PROP_RESERVED_SPACE   = ((uint16_t)0x0001)
-// 	PROP_CONTROLLER_MODE  = ((uint16_t)0x0001),
-// 	PROP_GEO_FENCE_RADIUS = (((uint16_t)0x0001)
+//  PROP_RESERVED_SPACE   = ((uint16_t)0x0001)
+//  PROP_CONTROLLER_MODE  = ((uint16_t)0x0001),
+//  PROP_GEO_FENCE_RADIUS = (((uint16_t)0x0001)
 // } system_property_t;
 
 
 // typedef struct  {
-// 	uint16_t hw_build_version;
-// 	uint16_t sw_build_version;
-// 	external_device_t *devices; //array of devices
-// 	uint8_t device_count;
+//  uint16_t hw_build_version;
+//  uint16_t sw_build_version;
+//  external_device_t *devices; //array of devices
+//  uint8_t device_count;
 // } application_ctx_t;
 
 

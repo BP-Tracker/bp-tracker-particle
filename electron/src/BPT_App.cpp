@@ -35,7 +35,7 @@ int stateFn(String command){
   controller_state_t s = controller.getState();
   Serial.printf("stateFn called: [state=%u]", s);
 
-	//TODO
+  //TODO
 
   Particle.publish("bpt:state", String::format("%u", s), 60, PRIVATE);
 
@@ -60,22 +60,22 @@ int getStatusFn(String command){
 }
 
 /*
-	Returns the device number from the command (if exists) and
-	sets the index to the start of the data. This function
-	returns 1 when no device number is found.
+  Returns the device number from the command (if exists) and
+  sets the index to the start of the data. This function
+  returns 1 when no device number is found.
 */
 int _getDeviceNumber(String command, int *commandStartIndex){
-	int deviceId = 1; // the default
+  int deviceId = 1; // the default
 
-	int deviceSep = command.indexOf(":");
-	if(deviceSep > 0){ // device number was passed in the command
-		*commandStartIndex = deviceSep + 1;
-		deviceId = atoi(command.substring(0, deviceSep));
-	}else{
-		*commandStartIndex = 0;
-	}
+  int deviceSep = command.indexOf(":");
+  if(deviceSep > 0){ // device number was passed in the command
+    *commandStartIndex = deviceSep + 1;
+    deviceId = atoi(command.substring(0, deviceSep));
+  }else{
+    *commandStartIndex = 0;
+  }
 
-	return deviceId;
+  return deviceId;
 }
 
 // pass the coordinate to the controller for processing
@@ -110,32 +110,32 @@ int _processRemoteGpsCoord(float lat, float lon, int devNum){
 // accepts GPS coordinates in the format: "[deviceNum:]latitude,lonitude"
 int gpsCoordFn(String command){
 
-	int commandIndex = 0;
+  int commandIndex = 0;
   int sep = command.lastIndexOf(",");
 
-	int deviceNum = _getDeviceNumber(command, &commandIndex);
+  int deviceNum = _getDeviceNumber(command, &commandIndex);
 
-	if(sep > 0){ // found GPS coords
-		String latS = command.substring(commandIndex, sep);
-		String lonS = command.substring(sep + 1);
-		return _processRemoteGpsCoord(atof(latS), atof(lonS), deviceNum);
-	}
+  if(sep > 0){ // found GPS coords
+    String latS = command.substring(commandIndex, sep);
+    String lonS = command.substring(sep + 1);
+    return _processRemoteGpsCoord(atof(latS), atof(lonS), deviceNum);
+  }
 
-	int r = controller.getGpsCoord(&gpsCoord);
-	float lat = r == 0 ? 0 : gpsCoord.lat;
-	float lon = r == 0 ? 0 : gpsCoord.lon;
+  int r = controller.getGpsCoord(&gpsCoord);
+  float lat = r == 0 ? 0 : gpsCoord.lat;
+  float lon = r == 0 ? 0 : gpsCoord.lon;
 
-	Serial.printf("gpsCoordFn called: [status=%u][lat=%f][log=%f]",
-	  r, lat, lon);
+  Serial.printf("gpsCoordFn called: [status=%u][lat=%f][log=%f]",
+    r, lat, lon);
 
-	if(r > 0){
-		Particle.publish("bpt:gps", String::format("%f,%f", lat, lon),
-	    60, PRIVATE);
-	}else{
-		//TODO: perhaps send something else ?
-		Particle.publish("bpt:gps", "0,0", 60, PRIVATE);
-	}
-	return r;
+  if(r > 0){
+    Particle.publish("bpt:gps", String::format("%f,%f", lat, lon),
+      60, PRIVATE);
+  }else{
+    //TODO: perhaps send something else ?
+    Particle.publish("bpt:gps", "0,0", 60, PRIVATE);
+  }
+  return r;
 }
 
 // publishes more information about the state of controller for troubleshooting
@@ -143,35 +143,35 @@ int gpsCoordFn(String command){
 // command : number -> publish the data to the cloud
 int getDiagnosticFn(String command){
 
-	//TODO: input validation
-	int publishToCloud = atoi(command);
+  //TODO: input validation
+  int publishToCloud = atoi(command);
 
-	// TODO
-	/*
-	uint32_t freeMem = System.freeMemory();
-	int firmwareVers = System.versionNumber();
-	unsigned long runTime = millis();
-	size_t eepromLen = EEPROM.length();
-	*/
-	accel_t a;
-	uint32_t freeMem = System.freeMemory();
-	uint16_t status = controller.accelModule.mod_status.status;
-	bool s = controller.accelModule.getStatus(MOD_STATUS_INTERRUPT);
-	controller.accelModule.getAcceleration(&a);
-	int mag = controller.accelModule.getMagnitude(&a);
+  // TODO
+  /*
+  uint32_t freeMem = System.freeMemory();
+  int firmwareVers = System.versionNumber();
+  unsigned long runTime = millis();
+  size_t eepromLen = EEPROM.length();
+  */
+  accel_t a;
+  uint32_t freeMem = System.freeMemory();
+  uint16_t status = controller.accelModule.mod_status.status;
+  bool s = controller.accelModule.getStatus(MOD_STATUS_INTERRUPT);
+  controller.accelModule.getAcceleration(&a);
+  int mag = controller.accelModule.getMagnitude(&a);
 
-	Serial.print("getDiagnosticFn called: ");
+  Serial.print("getDiagnosticFn called: ");
   Serial.printf(
-		"[status=%u][x=%f][y=%f][z=%f][m=%i][mem=%i][it=%i]\n",
+    "[status=%u][x=%f][y=%f][z=%f][m=%i][mem=%i][it=%i]\n",
     status, a.x, a.y, a.z, mag, freeMem, s == true ? 1 : 0);
 
-	if(publishToCloud){
-		Particle.publish("bpt:diag",
-		  String::format("%u,%f,%f,%f, %i", status, a.x, a.y, a.z, mag),
-		  60, PRIVATE);
-	}
+  if(publishToCloud){
+    Particle.publish("bpt:diag",
+      String::format("%u,%f,%f,%f, %i", status, a.x, a.y, a.z, mag),
+      60, PRIVATE);
+  }
 
-	return 1;
+  return 1;
 }
 
 /*
@@ -179,8 +179,8 @@ int getDiagnosticFn(String command){
   This is optional when only one remote device will be used.
 */
 int registerRemoteDeviceFn(String command){
-	//TODO
-	return -1;
+  //TODO
+  return -1;
 }
 
 // Sends an event acknowledgment to the controller
@@ -188,57 +188,57 @@ int registerRemoteDeviceFn(String command){
 // format [deviceId:]application_event_t[,data1,data2,..]
 int ackEventFn(String command){
 
-	int commandIndex = 0;
-	int deviceNum = _getDeviceNumber(command, &commandIndex);
-	int sep = command.indexOf(",");
+  int commandIndex = 0;
+  int deviceNum = _getDeviceNumber(command, &commandIndex);
+  int sep = command.indexOf(",");
 
-	String e = sep > 0 ?
-		command.substring(commandIndex, sep): command.substring(commandIndex);
-	application_event_t event = static_cast<application_event_t>(atoi(e));
+  String e = sep > 0 ?
+    command.substring(commandIndex, sep): command.substring(commandIndex);
+  application_event_t event = static_cast<application_event_t>(atoi(e));
 
-	String d = sep > 0 ? command.substring(sep + 1): "";
-	const char *data = d.c_str();
+  String d = sep > 0 ? command.substring(sep + 1): "";
+  const char *data = d.c_str();
 
-	Serial.printf("ackEventFn called: [devNum=%u][event=%u][data=%s]",
-	 	deviceNum, event, data);
+  Serial.printf("ackEventFn called: [devNum=%u][event=%u][data=%s]",
+     deviceNum, event, data);
 
-	bool r = controller.receive(event, data, deviceNum);
+  bool r = controller.receive(event, data, deviceNum);
 
-	return r == true ? 1 : -1;
+  return r == true ? 1 : -1;
 }
 
 
 void setup() {
-	Serial.begin(9600); // opens up a Serial port
+  Serial.begin(9600); // opens up a Serial port
 
-	pinMode(ON_BOARD_LED, OUTPUT);
+  pinMode(ON_BOARD_LED, OUTPUT);
 
-	appCtx.devices = devices;
+  appCtx.devices = devices;
 
-	controller.setup();
+  controller.setup();
 
-	Particle.function("bpt:state", stateFn);
-	Particle.function("bpt:gps", gpsCoordFn);
-	Particle.function("bpt:status", getStatusFn);
-	Particle.function("bpt:diag", getDiagnosticFn);
-	Particle.function("bpt:register", registerRemoteDeviceFn);
-	Particle.function("bpt:ack", ackEventFn);
+  Particle.function("bpt:state", stateFn);
+  Particle.function("bpt:gps", gpsCoordFn);
+  Particle.function("bpt:status", getStatusFn);
+  Particle.function("bpt:diag", getDiagnosticFn);
+  Particle.function("bpt:register", registerRemoteDeviceFn);
+  Particle.function("bpt:ack", ackEventFn);
 }
 
 void loop(){
 
-	// NB: the controller publishes 'bpt:event' events to the cloud
-	controller.loop();
+  // NB: the controller publishes 'bpt:event' events to the cloud
+  controller.loop();
 
-	if (millis() - stateTime > 10000) {
-		stateTime = millis();
+  if (millis() - stateTime > 10000) {
+    stateTime = millis();
 
-		if( digitalRead(WKP) == HIGH){
-			Serial.println("loop[wkp=HIGH]");
-		}else{
-			Serial.println("loop[wkp=LOW]");
-		}
+    if( digitalRead(WKP) == HIGH){
+      Serial.println("loop[wkp=HIGH]");
+    }else{
+      Serial.println("loop[wkp=LOW]");
+    }
 
-	}
+  }
 
 }

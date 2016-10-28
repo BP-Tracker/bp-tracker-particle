@@ -20,54 +20,54 @@
 #define MODULE_ACCELEOMETER     2
 
 typedef struct {
-	uint16_t status;
-	char message[MODULE_STATUS_MSG_MAX_LENGTH];
+  uint16_t status;
+  char message[MODULE_STATUS_MSG_MAX_LENGTH];
 } mod_status_t;
 
 typedef enum {
-	MODULE_TYPE_GPS            = ((uint8_t)0x01),
-	MODULE_TYPE_ACCELEOMETER   = ((uint8_t)0x02),
-	MODULE_TYPE_OTHER          = ((uint8_t)0x03),
+  MODULE_TYPE_GPS            = ((uint8_t)0x01),
+  MODULE_TYPE_ACCELEOMETER   = ((uint8_t)0x02),
+  MODULE_TYPE_OTHER          = ((uint8_t)0x03),
 } mod_type_t;
 
 
 class BPT_Module: public BPT {
- 	public:
+   public:
 
-  	BPT_Module(application_ctx_t *applicationCtx);
+    BPT_Module(application_ctx_t *applicationCtx);
     virtual ~BPT_Module();
 
-  	virtual void init(void) = 0;
+    virtual void init(void) = 0;
 
-		virtual void init(external_device_t *device) = 0;
+    virtual void init(external_device_t *device) = 0;
 
-		virtual bool enable(void) = 0;
+    virtual bool enable(void) = 0;
 
     virtual bool disable(void) = 0;
 
     virtual bool reset(void) = 0; // TODO: what state should the module be in?
 
-		virtual void shutdown(void) = 0;
+    virtual void shutdown(void) = 0;
 
-		virtual mod_type_t getType(void) = 0;
+    virtual mod_type_t getType(void) = 0;
 
     bool getStatus(uint16_t mask);
 
     void setStatus(uint16_t status);
 
-		void setStatus(uint16_t status, const char *msg);
+    void setStatus(uint16_t status, const char *msg);
 
     void clearStatus(uint16_t status);
 
-		// give the module a chance to maintain state and return an
-		// error if something went off.
-		virtual bool update();
+    // give the module a chance to maintain state and return an
+    // error if something went off.
+    virtual bool update();
 
     char *getStatusMsg();
 
     void setStatusMsg(const char *msg);
 
-		// returns the type of module
+    // returns the type of module
 
     mod_status_t mod_status;
 
