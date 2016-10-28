@@ -12,7 +12,6 @@ Table Of Contents
 -----------------
 
 - [Requirements](#requirements)
-- [Install](#install)
 - [Usage](#usage)
 - [Cloud API](#cloud-api)
 - [Additional Resources](#additional-resources)
@@ -29,7 +28,7 @@ BP Tracker requires the following:
 Usage
 -----
 
-The firmware can flashed on the hardware using the particle cli:
+The firmware can be flashed on the hardware using the particle cli:
 
 ```sh
 particle compile electron ./electron
@@ -44,6 +43,8 @@ For example:
 curl https://api.particle.io/v1/devices/<device_name>/bpt:gps -d access_token=<token>
 
 ```
+
+TODO
 
 Cloud API
 -----
