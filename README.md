@@ -1,7 +1,7 @@
 BP Tracker Firmware
 ==========
 
-Provides a particle.io [cloud API][cloudapi] to monitor the device and receive alerts when the core moves away from a dynamic geofence.
+Provides a particle.io [cloud API][cloudapi] to monitor and receive alerts when a device moves away from a dynamic geofence.
 
 [![Build Unstable][shield-unstable]](#)
 [![MIT licensed][shield-license]](#)
@@ -21,7 +21,7 @@ Requirements
 -------
 BP Tracker requires the following:
 
-  * particle.io [electron][electron] core (tested with 0.5.3 firmmware)
+  * particle.io [electron][electron] core (tested with 0.5.3 firmware)
   * [AssetTracker][assetrackershield] shield (tested with v002)
   * [particle cli][particlecli]
 
@@ -44,13 +44,13 @@ curl https://api.particle.io/v1/devices/<device_name>/bpt:gps -d access_token=<t
 
 ```
 
-TODO
-
 Cloud API
 -----
 
 BP tracker utilizes particle.io's cloud service to interface with client applications. The table below summaries all the functions
-that can be called on the device. <wip>
+that can be called on the device.
+
+Work in progress...
 
 
 Additional Resources
