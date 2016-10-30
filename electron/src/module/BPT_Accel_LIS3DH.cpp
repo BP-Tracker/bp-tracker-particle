@@ -22,7 +22,7 @@ bool BPT_Accel_LIS3DH::getStatus(uint16_t mask){
   return BPT_Accel::getStatus(mask);
 }
 
-bool BPT_Accel_LIS3DH::enable(void){
+bool BPT_Accel_LIS3DH::enable(void){ //TODO
 
   if(!getStatus(MOD_STATUS_ONLINE)){
     return false;
@@ -32,7 +32,7 @@ bool BPT_Accel_LIS3DH::enable(void){
     return true;
   }
 
-  //TODO
+
 
   return true;
 }
@@ -50,13 +50,13 @@ bool BPT_Accel_LIS3DH::update(void){
   return true;
 }
 /* Resets any interrupts (if it was triggered) */
-bool BPT_Accel_LIS3DH::reset(void){
+bool BPT_Accel_LIS3DH::reset(void){   //TODO
   if(getStatus(MOD_STATUS_INTERRUPT)){
     driver.clearInterrupt(true);
     clearStatus(MOD_STATUS_INTERRUPT);
   }
 
-  //TODO:
+
 
   return false;
 }
@@ -100,9 +100,9 @@ void BPT_Accel_LIS3DH::init(void){
   setStatus(MOD_STATUS_ONLINE);
 }
 
-void BPT_Accel_LIS3DH::shutdown(void){
+void BPT_Accel_LIS3DH::shutdown(void){ //TODO
    if(getStatus(MOD_STATUS_ONLINE)){
-    //TODO
+
      clearStatus(MOD_STATUS_ONLINE);
    }
 }

@@ -5,13 +5,13 @@ BPT::BPT(application_ctx_t *applicationCtx)
 BPT::~BPT(){}
 
 
-bool BPT::registerProperty(application_property_t prop, BPT *owner){
-  return false; //TODO
+bool BPT::registerProperty(application_property_t prop, BPT *owner){ //TODO
+  return false;
 }
 
-// template<class T>
+// template<class T> //TODO
 // T BPT::getProperty(application_property_t prop, T defaultValue){
-//   //TODO
+//
 //   return defaultValue;
 // }
 

@@ -14,6 +14,7 @@ Table Of Contents
 - [Requirements](#requirements)
 - [Usage](#usage)
 - [Cloud API](#cloud-api)
+- [Support & Releases](#support-&-releases)
 - [Additional Resources](#additional-resources)
 - [License](#license)
 
@@ -57,6 +58,11 @@ Additional Resources
 -----
 
 ...
+
+Support and Releases
+-----
+
+No releases yet.
 
 
 License

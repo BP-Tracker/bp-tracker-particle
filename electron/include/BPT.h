@@ -28,14 +28,18 @@ typedef enum {
   PROP_ACCEL_THRESHOLD  = (3)  /* */
 } application_property_t;
 
+
+// bpt:event event codes
 typedef enum {
   EVENT_STATE_CHANGE       = ((uint8_t)0x01), /* controller changed state */
   EVENT_REQUEST_GPS        = ((uint8_t)0x02), /* this ACK comes from a bpt:gps */
   EVENT_BATTERY_LOW 	     = ((uint8_t)0x03), /* requires ACK event */
   EVENT_NO_GPS_SIGNAL      = ((uint8_t)0x04),
-  EVENT_SOFT_PANIC         = ((uint8_t)0x05), /* not enough data */
+  EVENT_SOFT_PANIC         = ((uint8_t)0x05), /* not enough data to determine panic state */
   EVENT_PANIC              = ((uint8_t)0x06), /* requires ACK event */
-  EVENT_HARDWARE_FAULT     = ((uint8_t)0x07) /* TODO: can this be trapped */
+  EVENT_PROBE_CONTROLLER   = ((uint8_t)0x07), /* this is a special event a remote device can send to probe the controller */
+  EVENT_TEST               = ((uint8_t)0x08), /* for testing purposes */
+  EVENT_HARDWARE_FAULT     = ((uint8_t)0x09) /* TODO: can this be trapped? */
 } application_event_t;
 
 
@@ -101,23 +105,22 @@ class BPT {
 
     bool registerProperty(application_property_t prop, BPT *owner);
 
-    //TODO
-    // template<class T>
+
+    // template<class T> //TODO
     // bool registerProperty(application_property_t prop, BPT *owner,
     // 	T minValue, T maxValue){
-    // 		//TODO
     // 		return false;
     // } or use a function pointer to get the min/max?
 
     template<class T>
-    bool saveProperty(application_property_t prop, T& value){
-      //TODO
+    bool saveProperty(application_property_t prop, T& value){ //TODO
+
       return false;
     }
 
     template<class T>
-    T getProperty(application_property_t prop, T defaultValue){
-      //TODO
+    T getProperty(application_property_t prop, T defaultValue){ //TODO
+
       return defaultValue;
     }
 

@@ -33,7 +33,8 @@ typedef struct {
 typedef struct {
   publish_event_t publishEvent;
   uint16_t publishCount;
-  bool ackNotReceived; // reversed logic so zeroing the struct frees the slot
+  bool ackNotReceived; // reverse logic so zeroing the struct frees it
+  bool publishFailure; // event not received after MAX_ACK_EVENT_RETRY attempts
   int lastPublish;
 } ack_event_t;
 
@@ -53,16 +54,13 @@ typedef struct {
 #define ACK_EVENT_BUFFER_SIZE 5
 
 /*
-  The minimum elepased time (ms) before processing
-  the publish queue
+  The minimum time (ms) before processing the publish queue.
+
+  NB: this should be at least one second because the particle.io API
+  stipulates a max publish frequency of 1 event/sec (a bust of 4 events at
+  one time is allowed but requires 4 second delay afterwords)
 */
 #define CHECK_PUBLISH_QUEUE_FREQUENCY 2000
-
-/*
-  The minimum elepased time (ms) before processing
-  the ack event queue
-*/
-#define CHECK_ACK_QUEUE_FREQUENCY 5000
 
 /*
   The maximum number of cloud publishes permitted at one time. This is
@@ -76,10 +74,22 @@ typedef struct {
 #define SEQUENTIAL_PUBLISH_COOLDOWN 5000
 
 /*
+  The minimum elepased time in ms before processing
+  the ack event queue
+*/
+#define CHECK_ACK_QUEUE_FREQUENCY 5000
+
+/*
   The maximum number of recent coordinates to track. This allows
   the controller to receive data from potentially multiple devices.
  */
 #define MAX_REMOTE_GPS_COORDS 4
+
+/*
+  The maximum age in seconds a coordinate from a remote
+  device can be considered recent.
+*/
+#define GPS_COORD_MAX_AGE 120
 
 /*
   The maximum number of times to resend a published event
@@ -91,12 +101,12 @@ typedef struct {
 #define MAX_ACK_EVENT_RETRY 5
 
 /*
-  Wait x ms before resending the unacknowledged event.
+  Wait x sec before resending the unacknowledged event.
   On the successive tries, wait x ** 2 up to x ** MAX_ACK_EVENT_RETRY ms
   on the last try. NB: be careful about integer overflow conditions
   when changing this property.
 */
-#define ACK_EVENT_RETRY_DELAY 5000  /* 5e3 25e3 125e 625e ...*/
+#define ACK_EVENT_RETRY_DELAY 5  /* 5sec 25sec 125sec 625e ...*/
 
 
 class BPT_Controller: public BPT {
@@ -164,15 +174,28 @@ class BPT_Controller: public BPT {
       BPT_Accel accelModule;
     #endif
 
+    // keep track of the number of events that failed to get an ACK
+    // after MAX_ACK_EVENT_RETRY retries
+    static int totalDroppedAckEvents;
+    static int totalPublishedEvents;
+
+
     //TODO: move to private later
-    int publishEventCount = 0;
-    int ackEventCount = 0;
+    int publishEventCount;
+    int ackEventCount;
+
+    //TODO: remove later
+    //unsigned long publishTest[PUBLISH_EVENT_BUFFER_SIZE];
+
 
    private:
     controller_mode_t cMode;   /* current controller mode */
     controller_state_t cState; /* current state */
     controller_state_t pState; /* previous state */
-    int stateTime;
+    unsigned long controllerStateTime;
+    unsigned long publishTime;
+    unsigned long publishAckTime;
+
 
     // returns the number of events processed and published (if any)
     // using particle.io's cloud services
@@ -183,14 +206,17 @@ class BPT_Controller: public BPT {
     // and resubmits them for publishing
     int _processAckEvent();
 
+    // sets t to millis()
+    void _resetTime(unsigned long *t);
+
     // FIFO queue
     publish_event_t publishEventQueue[PUBLISH_EVENT_BUFFER_SIZE];
-    int publishEventFront = 0;
+    int publishEventFront;
 
     ack_event_t ackEventBag[ACK_EVENT_BUFFER_SIZE];
 
     remote_gps_coord_t remoteGpsCoord[MAX_REMOTE_GPS_COORDS];
-    int remoteGpsIndex = 0; // index of the most recent received coordinate
+    int remoteGpsIndex; // index of the most recent received coordinate
 };
 
 #endif

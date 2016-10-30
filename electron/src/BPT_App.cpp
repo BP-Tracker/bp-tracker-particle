@@ -21,6 +21,8 @@ extern external_device_t devices[EXTERNAL_DEVICE_COUNT];
 application_ctx_t appCtx;
 gps_coord_t gpsCoord;
 unsigned long stateTime = 0;
+int publishCount = 0;
+int temp = 0;
 BPT_Controller controller = BPT_Controller(&appCtx);
 FuelGauge fuelGauge;
 
@@ -33,7 +35,7 @@ FuelGauge fuelGauge;
 // format [deviceNum:]controller_state_t
 int stateFn(String command){
   controller_state_t s = controller.getState();
-  Serial.printf("stateFn called: [state=%u]", s);
+  Serial.printf("app: stateFn - [state=%u]", s);
 
   //TODO
 
@@ -51,10 +53,8 @@ int getStatusFn(String command){
   controller_state_t s = controller.getState();
   int r = controller.getGpsCoord(&gpsCoord);
 
-  Particle.publish("bpt:status",
-    String::format("%u,%u,%.2f,%i,%f,%f", m, s,
-      fuelGauge.getSoC(), r, gpsCoord.lat, gpsCoord.lon),
-    60, PRIVATE);
+  Particle.publish("bpt:status", String::format("%u,%u,%.2f,%i,%f,%f", m, s,
+      fuelGauge.getSoC(), r, gpsCoord.lat, gpsCoord.lon), 60, PRIVATE);
 
     return 0;
 }
@@ -84,7 +84,7 @@ int _processRemoteGpsCoord(float lat, float lon, int devNum){
   coord.lat = lat;
   coord.lon = lon;
 
-  Serial.printf("processRemoteGpsCoord called: [lat=%f][lon=%f][devNum=%u]\n",
+  Serial.printf("app: processRemoteGpsCoord - [lat=%f][lon=%f][devNum=%u]\n",
     coord.lat, coord.lon, devNum);
 
   bool r = controller.receive(&coord, devNum);
@@ -94,16 +94,16 @@ int _processRemoteGpsCoord(float lat, float lon, int devNum){
 /*
   This function has a dual purpose:
   1 - when GPS coords are passed in, the controller will use it to
-  determine the proximity of the coordinate and update its
+  determine the proximity of the remote device and update its
   state accordingly. This is used when the controller publishes a request
   to remote devices.
 
-  2 - otherwise, it returns the number of satelites in the gps signal
+  2 - otherwise, it returns the number of satellites in the gps signal
   and publishes the coords of the device in the format:
   latitude,longitude
 
   curl https://api.particle.io/v1/devices/Lippy/bpt:gps
-   -d access_token=${particle token list }
+   -d access_token=${particle token list}
 
   TODO: is this thread safe?
 */
@@ -125,15 +125,12 @@ int gpsCoordFn(String command){
   float lat = r == 0 ? 0 : gpsCoord.lat;
   float lon = r == 0 ? 0 : gpsCoord.lon;
 
-  Serial.printf("gpsCoordFn called: [status=%u][lat=%f][log=%f]",
-    r, lat, lon);
+  Serial.printf("app: gpsCoordFn - [status=%u][lat=%f][log=%f]", r, lat, lon);
 
   if(r > 0){
-    Particle.publish("bpt:gps", String::format("%f,%f", lat, lon),
-      60, PRIVATE);
+    Particle.publish("bpt:gps", String::format("%f,%f", lat, lon), 60, PRIVATE);
   }else{
-    //TODO: perhaps send something else ?
-    Particle.publish("bpt:gps", "0,0", 60, PRIVATE);
+    Particle.publish("bpt:event", String::format("%u", EVENT_NO_GPS_SIGNAL), 60, PRIVATE);
   }
   return r;
 }
@@ -141,12 +138,12 @@ int gpsCoordFn(String command){
 // publishes more information about the state of controller for troubleshooting
 // or diagnostic purposes
 // command : number -> publish the data to the cloud
-int getDiagnosticFn(String command){
+int getDiagnosticFn(String command){ // TODO
 
   //TODO: input validation
   int publishToCloud = atoi(command);
 
-  // TODO
+
   /*
   uint32_t freeMem = System.freeMemory();
   int firmwareVers = System.versionNumber();
@@ -160,7 +157,7 @@ int getDiagnosticFn(String command){
   controller.accelModule.getAcceleration(&a);
   int mag = controller.accelModule.getMagnitude(&a);
 
-  Serial.print("getDiagnosticFn called: ");
+  Serial.print("app: getDiagnosticFn - ");
   Serial.printf(
     "[status=%u][x=%f][y=%f][z=%f][m=%i][mem=%i][it=%i]\n",
     status, a.x, a.y, a.z, mag, freeMem, s == true ? 1 : 0);
@@ -199,7 +196,7 @@ int ackEventFn(String command){
   String d = sep > 0 ? command.substring(sep + 1): "";
   const char *data = d.c_str();
 
-  Serial.printf("ackEventFn called: [devNum=%u][event=%u][data=%s]",
+  Serial.printf("app: ackEventFn - [devNum=%u][event=%u][data=%s]\n",
      deviceNum, event, data);
 
   bool r = controller.receive(event, data, deviceNum);
@@ -230,14 +227,49 @@ void loop(){
   // NB: the controller publishes 'bpt:event' events to the cloud
   controller.loop();
 
+  /*
+  bool s = true;
+
+  while(s && publishCount < 1){
+    s = controller.publish(EVENT_TEST, String::format("B%i", publishCount),
+    true, 2);
+    //Serial.printf("app: publish status %u\n", s == true ? 1: 0);
+
+    if(s){
+      publishCount++;
+    }else{
+      if(temp <= 0){
+        temp = publishCount;
+      }
+    }
+  }
+  */
+
+
   if (millis() - stateTime > 10000) {
     stateTime = millis();
 
+    /*
+    for(int i = 0; i < PUBLISH_EVENT_BUFFER_SIZE; i++){
+      unsigned long tt = controller.publishTest[i];
+      Serial.printf("time at index %i = %u\n", i, tt);
+    }
+    */
+
+    Serial.printf("app: [state=%u][mode=%u][publishEvent=%u]",
+      controller.getState(), controller.getMode(), controller.publishEventCount);
+
+    Serial.printf("[ackEvent=%u][total=%i][dropped=%i]\n",
+      controller.ackEventCount, controller.totalPublishedEvents,
+      controller.totalDroppedAckEvents);
+
+    /*
     if( digitalRead(WKP) == HIGH){
       Serial.println("loop[wkp=HIGH]");
     }else{
       Serial.println("loop[wkp=LOW]");
     }
+    */
 
   }
 

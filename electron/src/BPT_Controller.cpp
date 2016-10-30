@@ -1,5 +1,7 @@
 #include "BPT_Controller.h"
 
+#define TIME_DELTA(t) (int)(millis() - (t))
+
 BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   : BPT(applicationCtx),
   #ifdef EXTERNAL_DEVICE_MT3339
@@ -16,7 +18,13 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
     cState(STATE_INIT) {
 
   //TODO: initialize buffers
-
+  publishEventCount = 0;
+  ackEventCount = 0;
+  publishEventFront = 0;
+  remoteGpsIndex = 0;
+  publishTime = millis();
+  publishAckTime = millis();
+  controllerStateTime = millis();
 }
 
 bool BPT_Controller::getGpsCoord(gps_coord_t *c){
@@ -45,9 +53,36 @@ bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
 
 bool BPT_Controller::receive(application_event_t e, const char *data,
   uint8_t deviceNumber){
-  // TODO
 
-  return true;
+  bool found = false;
+
+  // this is a special event a remote device can send to
+  // to wake up this controller and perform any maintenance duties
+  if(e == EVENT_PROBE_CONTROLLER){ //TODO: complete the logic
+    //FIXME
+    return true;
+  }
+
+  if(ackEventCount <= 0){
+    Serial.println("controller: warning event received but not waiting for any");
+    return found;
+  }
+
+  for(int i = 0; i < ACK_EVENT_BUFFER_SIZE && !found; i++){
+    ack_event_t *aE =  &ackEventBag[i];
+    publish_event_t *pE = &(aE->publishEvent);
+    bool needSpecifcDev = pE->deviceNum != 0;
+
+    if(aE->ackNotReceived && e == pE->event){
+
+      if(!needSpecifcDev || pE->deviceNum == deviceNumber){
+        aE->ackNotReceived = false;
+        ackEventCount--;
+        found = true;
+      }
+    }
+  }
+  return found;
 }
 
 void BPT_Controller::setup(void) {
@@ -77,25 +112,55 @@ void BPT_Controller::setup(void) {
 }
 
 // main controller logic
-void BPT_Controller::loop(void) {
+void BPT_Controller::loop(void) { //TODO
 
   gpsModule.update();
   accelModule.update();
+
+  int timeDelta = millis() - publishTime;
+
+  if( publishEventCount
+      && TIME_DELTA(publishTime) > CHECK_PUBLISH_QUEUE_FREQUENCY){
+
+    int c = _processPublishEvent();
+    _resetTime(&publishTime);
+
+    if(c >= MAX_SEQUENTIAL_PUBLISH){   // add a cooldown to the time
+      publishTime = publishTime
+        + abs(SEQUENTIAL_PUBLISH_COOLDOWN - CHECK_PUBLISH_QUEUE_FREQUENCY);
+    }
+
+    Serial.printf("controller: %i events processed [t=%i][d=%i]\n",
+    c, publishTime, timeDelta);
+  }
+
+  if( ackEventCount
+    && TIME_DELTA(publishAckTime) > CHECK_ACK_QUEUE_FREQUENCY){
+
+    int c = _processAckEvent();
+    if(c > 0){
+      Serial.printf("controller: %i act events processed\n", c);
+    }
+
+    _resetTime(&publishAckTime);
+  }
 
   if(publishEventCount >= PUBLISH_EVENT_BUFFER_SIZE - 1
      || ackEventCount >= ACK_EVENT_BUFFER_SIZE - 1){
     // The buffers are full, allow the controller time
     // to process them
 
-    //TODO
+
   }
 
 }
 
+void BPT_Controller::_resetTime(unsigned long *t){
+  *t = millis();
+}
 
 
-//TODO: complete
-void BPT_Controller::reset(void) {
+void BPT_Controller::reset(void) { //TODO: complete
 
 }
 
@@ -110,6 +175,7 @@ controller_state_t BPT_Controller::getState(){
 
 bool BPT_Controller::setMode(controller_mode_t m){
   cMode = m;
+  // TODO: check if mode can be set
   return true;
 }
 
@@ -142,7 +208,7 @@ bool BPT_Controller::publish(application_event_t event,
   if(ackRequired){
     bool foundSlot = false;
 
-    for(int i = 0; i < ACK_EVENT_BUFFER_SIZE; i++){
+    for(int i = 0; i < ACK_EVENT_BUFFER_SIZE && !foundSlot; i++){
       ack_event_t *t = &ackEventBag[i];
 
       if(!t->ackNotReceived){ // ack received so not needed anymore
@@ -164,7 +230,7 @@ bool BPT_Controller::publish(application_event_t event,
       }
     }
     if(!foundSlot){ // should never get here
-      Serial.println("ERROR: could not find ACK slot");
+      Serial.println("controller: ERROR - could not find ACK slot");
       return false;
     }
   }
@@ -175,17 +241,54 @@ bool BPT_Controller::publish(application_event_t event,
 }
 
 // look for events that need to be resubmitted
-int BPT_Controller::_processAckEvent(){
-  if(!ackEventCount){
-    return 0;
+int BPT_Controller::_processAckEvent(){ //TODO
+  if(ackEventCount <= 0 || publishEventCount >= PUBLISH_EVENT_BUFFER_SIZE){
+    return 0; // no space or events
   }
 
-  //TODO
+  bool done = false;
+  int processed = 0;
 
+  for(int i = 0; i < ACK_EVENT_BUFFER_SIZE && !done; i++){
+    ack_event_t *aE =  &ackEventBag[i];
 
+    if(aE->publishCount > MAX_ACK_EVENT_RETRY && aE->publishFailure == false ){
+        aE->publishFailure = true;
+        aE->ackNotReceived = false; //TODO: handle this differently?
+        totalDroppedAckEvents++;
+        ackEventCount--;
 
+        if(ackEventCount < 0){
+          Serial.println("controller: ackEventCount < 0!");
+          ackEventCount = 0; // safe guard is this necessary?
+        }
+    }
 
+    if( aE->ackNotReceived && !aE->publishFailure ){
+      // is it time to republish?
+      int delaySec = pow(ACK_EVENT_RETRY_DELAY, aE->publishCount);
+      int now = Time.now();
 
+      Serial.printf("controller: [delaySec=%i][now=%i][lp=%i]\n",
+        delaySec, now, aE->lastPublish  );
+
+      if( (aE->lastPublish + delaySec) <= now ){
+        publish_event_t *pE = &(aE->publishEvent);
+
+        bool success = publish(pE->event, pE->data, false, pE->deviceNum);
+        if(success){
+
+          aE->publishCount = aE->publishCount + 1;
+          aE->lastPublish = now;
+          processed++;
+
+        }else{
+          done = true; // no more free slots
+        }
+      }
+    }
+  }
+  return processed;
 }
 
 int BPT_Controller::_processPublishEvent(){
@@ -198,16 +301,26 @@ int BPT_Controller::_processPublishEvent(){
   while(published < MAX_SEQUENTIAL_PUBLISH && publishEventCount > 0){
     publish_event_t *t = &publishEventQueue[publishEventFront];
 
-    Serial.printf("publishing event: %u\n [deviceNum=%u][data=%s]",
-      t->event, t->deviceNum, t->data);
-
     /*
     Particle.publish("bpt:event",
         String::format("%u,%s", t->event, t->data), 60, PRIVATE);
     */
+
+    Serial.printf("controller: published [event=%u][deviceNum=%u][data=%s]\n",
+      t->event, t->deviceNum, t->data);
+
+    //TODO: remove later
+    //int temp = totalPublishedEvents % PUBLISH_EVENT_BUFFER_SIZE;
+    //publishTest[temp] = millis();
+
+    totalPublishedEvents++;
     published++;
     publishEventCount--;
     publishEventFront = (publishEventFront + 1) % PUBLISH_EVENT_BUFFER_SIZE;
   }
   return published;
 }
+
+
+int BPT_Controller::totalDroppedAckEvents = 0;
+int BPT_Controller::totalPublishedEvents = 0;
