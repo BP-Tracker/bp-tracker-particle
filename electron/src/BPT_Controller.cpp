@@ -22,6 +22,7 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   ackEventCount = 0;
   publishEventFront = 0;
   remoteGpsIndex = 0;
+  ackEventsEnabled = true;
   publishTime = millis();
   publishAckTime = millis();
   controllerStateTime = millis();
@@ -34,6 +35,8 @@ bool BPT_Controller::getGpsCoord(gps_coord_t *c){
 int BPT_Controller::getAcceleration(accel_t *t){
   return accelModule.getAcceleration(t);
 }
+
+
 
 bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
   int i = (remoteGpsIndex + 1) % MAX_REMOTE_GPS_COORDS;
@@ -51,19 +54,30 @@ bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
   return true;
 }
 
+// this is a special event a remote device can send to
+// wake up the controller and perform any maintenance duties
+void BPT_Controller::_probeController(uint8_t deviceNumber){ //TODO: complete the logic
+  bool s = publish(EVENT_PROBE_CONTROLLER,
+    String::format("%u", deviceNumber), false, deviceNumber);
+
+  if(!s){
+      Serial.println("controller: warning cannot publish EVENT_PROBE_CONTROLLER event");
+  }
+
+  //TODO: wakeup any pending ack events for the device
+}
+
 bool BPT_Controller::receive(application_event_t e, const char *data,
   uint8_t deviceNumber){
 
-  bool found = false;
-
-  // this is a special event a remote device can send to
-  // to wake up this controller and perform any maintenance duties
-  if(e == EVENT_PROBE_CONTROLLER){ //TODO: complete the logic
-    //FIXME
+  if(e == EVENT_PROBE_CONTROLLER){
+    _probeController(deviceNumber);
     return true;
   }
 
-  if(ackEventCount <= 0){
+  bool found = false;
+
+  if(ackEventCount <= 0 || !ackEventsEnabled){
     Serial.println("controller: warning event received but not waiting for any");
     return found;
   }
@@ -89,9 +103,13 @@ void BPT_Controller::setup(void) {
 
   //TODO: check result
   registerProperty(PROP_CONTROLLER_MODE, this);
+  registerProperty(PROP_ACK_ENABLED, this);
 
+  ackEventsEnabled = getProperty(PROP_ACK_ENABLED, true);
   cMode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_NORMAL);
   cState = STATE_INIT;
+
+
 
   #ifdef EXTERNAL_DEVICE_MT3339
     gpsModule.init( &(applicationCtx->devices[EXTERNAL_DEVICE_MT3339]) );
@@ -114,11 +132,11 @@ void BPT_Controller::setup(void) {
 // main controller logic
 void BPT_Controller::loop(void) { //TODO
 
+  // run module updates
   gpsModule.update();
   accelModule.update();
 
-  int timeDelta = millis() - publishTime;
-
+  // process publish queue
   if( publishEventCount
       && TIME_DELTA(publishTime) > CHECK_PUBLISH_QUEUE_FREQUENCY){
 
@@ -131,10 +149,11 @@ void BPT_Controller::loop(void) { //TODO
     }
 
     Serial.printf("controller: %i events processed [t=%i][d=%i]\n",
-    c, publishTime, timeDelta);
+      c, publishTime, TIME_DELTA(publishTime));
   }
 
-  if( ackEventCount
+  // process ack queue
+  if( ackEventsEnabled && ackEventCount
     && TIME_DELTA(publishAckTime) > CHECK_ACK_QUEUE_FREQUENCY){
 
     int c = _processAckEvent();
@@ -145,13 +164,7 @@ void BPT_Controller::loop(void) { //TODO
     _resetTime(&publishAckTime);
   }
 
-  if(publishEventCount >= PUBLISH_EVENT_BUFFER_SIZE - 1
-     || ackEventCount >= ACK_EVENT_BUFFER_SIZE - 1){
-    // The buffers are full, allow the controller time
-    // to process them
-
-
-  }
+  // run states TODO
 
 }
 
@@ -205,7 +218,7 @@ bool BPT_Controller::publish(application_event_t event,
   strcpy(p->data, data);
 
   // find a free slot to place ack event
-  if(ackRequired){
+  if(ackEventsEnabled && ackRequired){
     bool foundSlot = false;
 
     for(int i = 0; i < ACK_EVENT_BUFFER_SIZE && !foundSlot; i++){
