@@ -180,6 +180,22 @@ int registerRemoteDeviceFn(String command){
   return -1;
 }
 
+
+/*
+  Probes the controller and returns a bpt:event EVENT_PROBE_CONTROLLER
+  event if it can (the probe can also be triggered by sending a
+  bpt:ack event). Command format: [deviceId:]
+*/
+int probeControllerFn(String command){
+  int commandIndex = 0;
+  int deviceNum = _getDeviceNumber(command, &commandIndex);
+
+  Serial.printf("app: probeControllerFn - [devNum=%u]\n", deviceNum);
+
+  bool r = controller.receive(EVENT_PROBE_CONTROLLER, "", deviceNum);
+  return r == true ? 1 : -1;
+}
+
 // Sends an event acknowledgment to the controller
 // NB: not all "btp:event" events require an acknowledgment
 // format [deviceId:]application_event_t[,data1,data2,..]
@@ -220,6 +236,7 @@ void setup() {
   Particle.function("bpt:diag", getDiagnosticFn);
   Particle.function("bpt:register", registerRemoteDeviceFn);
   Particle.function("bpt:ack", ackEventFn);
+  Particle.function("bpt:probe", probeControllerFn);
 }
 
 void loop(){
