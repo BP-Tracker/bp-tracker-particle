@@ -54,23 +54,8 @@ bool BPT_Accel_LIS3DH::reset(void){   //TODO
     clearStatus(MOD_STATUS_INTERRUPT);
   }
 
-
-
   return false;
 }
-
-/*
-void BPT_Accel_LIS3DH::init(external_device_t *dev){ //TODO
-  device = dev;
-
-  if(device->type != DEVICE_TYPE_ACCEL){
-    const char *m = "Device type not supported";
-    setStatus(MOD_STATUS_ERROR, m);
-    return;
-  }
-  init();
-}
-*/
 
 void BPT_Accel_LIS3DH::init(void){
 
@@ -81,14 +66,6 @@ void BPT_Accel_LIS3DH::init(void){
     setStatus(MOD_STATUS_ERROR, m);
     return;
   }
-
-  /*
-  if(device == 0){
-    const char *m = "Cannot call init without an external_device_t";
-    setStatus(MOD_STATUS_ERROR, m);
-    return;
-  }
-  */
 
   registerProperty(PROP_ACCEL_THRESHOLD, this);
 

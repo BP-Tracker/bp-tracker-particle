@@ -64,19 +64,6 @@ bool BPT_GPS_MT3339::reset(void){
   return false;
 }
 
-/*
-void BPT_GPS_MT3339::init(external_device_t *dev){ //TODO
-  device = dev;
-
-  if(device->type != DEVICE_TYPE_GPS){
-    const char *m = "Device type not supported";
-    setStatus(MOD_STATUS_ERROR, m);
-    return;
-  }
-  init();
-}
-*/
-
 void BPT_GPS_MT3339::init(void){
 
   // note EXTERNAL_DEVICE_MT3339 will be defined if this class is used
@@ -88,14 +75,6 @@ void BPT_GPS_MT3339::init(void){
     setStatus(MOD_STATUS_ERROR, m);
     return;
   }
-
-  /*
-  if(device == 0){
-    const char *m = "Cannot call init without an external_device_t";
-    setStatus(MOD_STATUS_ERROR, m);
-    return;
-  }
-  */
 
   uint16_t powerPin = device->wiring_pins[0];
 

@@ -6,18 +6,16 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   : BPT(applicationCtx),
     gpsModule(BPT_GPS(applicationCtx)),
     accelModule(BPT_Accel(applicationCtx)),
+    publishEventCount(0),
+    ackEventCount(0),
     cMode(CONTROLLER_MODE_NORMAL),
-    cState(STATE_INIT) {
+    cState(STATE_INIT),
+    pState(STATE_INIT),
+    controllerStateTime(millis()),
+    publishTime(millis()),
+    publishAckTime(millis()) {
 
   //TODO: initialize buffers
-  publishEventCount = 0;
-  ackEventCount = 0;
-  publishEventFront = 0;
-  remoteGpsIndex = 0;
-  ackEventsEnabled = true;
-  publishTime = millis();
-  publishAckTime = millis();
-  controllerStateTime = millis();
 }
 
 bool BPT_Controller::getGpsCoord(gps_coord_t *c){
@@ -27,7 +25,6 @@ bool BPT_Controller::getGpsCoord(gps_coord_t *c){
 int BPT_Controller::getAcceleration(accel_t *t){
   return accelModule.getAcceleration(t);
 }
-
 
 
 bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
@@ -104,21 +101,6 @@ void BPT_Controller::setup(void) {
   gpsModule.init();
   accelModule.init();
 
-  /*
-  #ifdef EXTERNAL_DEVICE_MT3339
-    gpsModule.init( &(applicationCtx->devices[EXTERNAL_DEVICE_MT3339]) );
-  #else
-    gpsModule.init();
-  #endif
-
-  #ifdef EXTERNAL_DEVICE_LIS3DH
-    accelModule.init( &(applicationCtx->devices[EXTERNAL_DEVICE_LIS3DH]) );
-  #else
-    accelModule.init();
-  #endif
-  */
-
-
   //TODO: check return
   gpsModule.enable();
   accelModule.enable();
@@ -127,7 +109,6 @@ void BPT_Controller::setup(void) {
 // main controller logic
 void BPT_Controller::loop(void) { //TODO
 
-  // run module updates
   gpsModule.update();
   accelModule.update();
 
@@ -167,9 +148,7 @@ void BPT_Controller::_resetTime(unsigned long *t){
   *t = millis();
 }
 
-
 void BPT_Controller::reset(void) { //TODO: complete
-
 }
 
 bool BPT_Controller::setState(controller_state_t s){
