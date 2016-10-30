@@ -63,6 +63,12 @@ typedef struct {
 #define CHECK_PUBLISH_QUEUE_FREQUENCY 2000
 
 /*
+  How often to execute the controller's main logic in ms
+  when it's awake. Gauge this for power utilization TODO: fine tune this
+*/
+#define CONTROLLER_FREQUENCY 1000
+
+/*
   The maximum number of cloud publishes permitted at one time. This is
   restricted to particle.io's API
 */
@@ -177,7 +183,8 @@ class BPT_Controller: public BPT {
     // keep track of the number of events that failed to get an ACK
     // after MAX_ACK_EVENT_RETRY retries
     static int totalDroppedAckEvents;
-    static int totalPublishedEvents;
+
+    static int totalPublishedEvents; // total events published since uptime
 
 
     //TODO: move to private later
@@ -186,7 +193,6 @@ class BPT_Controller: public BPT {
 
     //TODO: remove later
     //unsigned long publishTest[PUBLISH_EVENT_BUFFER_SIZE];
-
 
    private:
     controller_mode_t cMode;   /* current controller mode */
@@ -205,6 +211,14 @@ class BPT_Controller: public BPT {
     // received an acknowledgment after a period of time
     // and resubmits them for publishing
     int _processAckEvent();
+
+    // publishes a bpt:event and forces out pending ack events
+    void _probeController(uint8_t deviceNum);
+
+    // set to false if any events set by the controller
+    // doesn't need to be acknowledged.
+    // default is true see PROP_ACK_ENABLED
+    bool ackEventsEnabled;
 
     // sets t to millis()
     void _resetTime(unsigned long *t);
