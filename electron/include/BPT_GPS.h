@@ -1,5 +1,12 @@
 #include "BPT_Module.h"
 
+// GPS module include
+#ifdef EXTERNAL_DEVICE_MT3339
+  #include "BPT_GPS_MT3339.h"
+#else
+  #include "BPT_Device_Impl.h"
+#endif
+
 #ifndef BPT_GPS_h
 #define BPT_GPS_h
 
@@ -23,8 +30,6 @@ class BPT_GPS: public BPT_Module {
     ~BPT_GPS();
 
     virtual void init(void);
-
-    virtual void init(external_device_t *device);
 
     virtual bool enable(void);
 
@@ -50,6 +55,13 @@ class BPT_GPS: public BPT_Module {
     float toRadians(float degrees);
 
     float toDegrees(float radians);
+
+    // TODO: would it be better if allocation was dynamic?
+    #ifdef EXTERNAL_DEVICE_MT3339
+      BPT_GPS_MT3339 _deviceImpl;
+    #else
+      BPT_Device_Impl _deviceImpl;
+    #endif
 
 };
 

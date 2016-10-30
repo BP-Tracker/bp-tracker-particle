@@ -39,8 +39,6 @@ class BPT_Module: public BPT {
 
     virtual void init(void) = 0;
 
-    virtual void init(external_device_t *device) = 0;
-
     virtual bool enable(void) = 0;
 
     virtual bool disable(void) = 0;

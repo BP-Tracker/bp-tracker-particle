@@ -4,7 +4,7 @@
 #include "BPT_Accel_LIS3DH.h"
 
 BPT_Accel_LIS3DH::BPT_Accel_LIS3DH(application_ctx_t *applicationCtx)
-  : BPT_Accel(applicationCtx){ }
+  : BPT_Device_Impl(applicationCtx){ }
 
 BPT_Accel_LIS3DH::~BPT_Accel_LIS3DH(){ }
 
@@ -19,7 +19,7 @@ bool BPT_Accel_LIS3DH::getStatus(uint16_t mask){
       setStatus(MOD_STATUS_INTERRUPT);
   }
 
-  return BPT_Accel::getStatus(mask);
+  return BPT_Device_Impl::getStatus(mask);
 }
 
 bool BPT_Accel_LIS3DH::enable(void){ //TODO
@@ -31,8 +31,6 @@ bool BPT_Accel_LIS3DH::enable(void){ //TODO
   if(getStatus(MOD_STATUS_ENABLED)){
     return true;
   }
-
-
 
   return true;
 }
@@ -61,6 +59,7 @@ bool BPT_Accel_LIS3DH::reset(void){   //TODO
   return false;
 }
 
+/*
 void BPT_Accel_LIS3DH::init(external_device_t *dev){ //TODO
   device = dev;
 
@@ -71,14 +70,25 @@ void BPT_Accel_LIS3DH::init(external_device_t *dev){ //TODO
   }
   init();
 }
+*/
 
 void BPT_Accel_LIS3DH::init(void){
 
+  device = &(applicationCtx->devices[EXTERNAL_DEVICE_LIS3DH]);
+
+  if(device->type != DEVICE_TYPE_ACCEL){
+    const char *m = "Device type not supported";
+    setStatus(MOD_STATUS_ERROR, m);
+    return;
+  }
+
+  /*
   if(device == 0){
     const char *m = "Cannot call init without an external_device_t";
     setStatus(MOD_STATUS_ERROR, m);
     return;
   }
+  */
 
   registerProperty(PROP_ACCEL_THRESHOLD, this);
 
@@ -107,13 +117,23 @@ void BPT_Accel_LIS3DH::shutdown(void){ //TODO
    }
 }
 
-int BPT_Accel_LIS3DH::getAcceleration(accel_t *accel){
-  driver.read();
-  memset(accel, 0, sizeof(accel_t)); // clears the data
+// NB: expects a accel_t reference
+// get the acceleration
+int BPT_Accel_LIS3DH::getIntData(void *accel, int size){
 
-  accel->x = driver.x_g;
-  accel->y = driver.y_g;
-  accel->z = driver.z_g;
+  if(sizeof(accel_t) != size){ // guard
+    //TODO: set error condition
+    return 0;
+  }
+
+  accel_t *accelRef = static_cast<accel_t*>(accel);
+
+  driver.read();
+  memset(accelRef, 0, sizeof(accel_t)); // clears the data
+
+  accelRef->x = driver.x_g;
+  accelRef->y = driver.y_g;
+  accelRef->z = driver.z_g;
 
   return 1;
 }

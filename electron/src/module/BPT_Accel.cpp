@@ -2,40 +2,44 @@
 #include "math.h"
 
 BPT_Accel::BPT_Accel(application_ctx_t *applicationCtx)
-  : BPT_Module(applicationCtx){ }
+  : BPT_Module(applicationCtx),
+  #ifdef EXTERNAL_DEVICE_LIS3DH
+    _deviceImpl(BPT_Accel_LIS3DH(applicationCtx))
+  #else
+    _deviceImpl(BPT_Device_Impl(applicationCtx))
+  #endif
+  { }
 
 BPT_Accel::~BPT_Accel(){ }
 
-// default implementation
-void BPT_Accel::init(void){
-}
 
-void BPT_Accel::init(external_device_t *device){
+void BPT_Accel::init(void){
+    _deviceImpl.init();
 }
 
 void BPT_Accel::shutdown(){
+  _deviceImpl.shutdown();
 
 }
 
 bool BPT_Accel::update(void){
-  return true;
+  return _deviceImpl.update();
 }
 
 bool BPT_Accel::enable(void){
-  return false;
+  return _deviceImpl.enable();
 }
 
 bool BPT_Accel::disable(void){
-  return false;
+  return _deviceImpl.disable();
 }
 
 bool BPT_Accel::reset(void){
-  return false;
+  return _deviceImpl.reset();
 }
 
 mod_type_t BPT_Accel::getType(void){
-  mod_type_t t = MODULE_TYPE_ACCELEOMETER;
-  return t;
+  return MODULE_TYPE_ACCELEOMETER;
 }
 
 float BPT_Accel::getMagnitude(accel_t *accel){
@@ -44,5 +48,5 @@ float BPT_Accel::getMagnitude(accel_t *accel){
 }
 
 int BPT_Accel::getAcceleration(accel_t *accel){
-  return -1;
+  return _deviceImpl.getIntData(accel, sizeof(accel_t));
 }

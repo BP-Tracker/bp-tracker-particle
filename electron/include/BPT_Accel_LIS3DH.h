@@ -1,4 +1,4 @@
-#include "BPT_Accel.h"
+#include "BPT_Device_Impl.h"
 #include "Adafruit_LIS3DH.h"
 
 #ifndef BPT_Accel_LIS3DH_h
@@ -6,7 +6,7 @@
 
 #define DEFAULT_PROP_ACCEL_THRESHOLD 16
 
-class BPT_Accel_LIS3DH: public BPT_Accel {
+class BPT_Accel_LIS3DH: public BPT_Device_Impl {
 
   public:
 
@@ -15,8 +15,6 @@ class BPT_Accel_LIS3DH: public BPT_Accel {
     ~BPT_Accel_LIS3DH();
 
     void init();
-
-    void init(external_device_t *dev);
 
     bool enable(void);
 
@@ -31,7 +29,9 @@ class BPT_Accel_LIS3DH: public BPT_Accel {
     // Override
     bool getStatus(uint16_t mask);
 
-    int getAcceleration(accel_t *accel);
+    // override
+    int getIntData(void *accel, int size);
+
 
   protected:
 

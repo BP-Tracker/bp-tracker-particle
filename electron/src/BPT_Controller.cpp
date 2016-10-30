@@ -4,16 +4,8 @@
 
 BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   : BPT(applicationCtx),
-  #ifdef EXTERNAL_DEVICE_MT3339
-    gpsModule(BPT_GPS_MT3339(applicationCtx)),
-  #else
     gpsModule(BPT_GPS(applicationCtx)),
-  #endif
-  #ifdef EXTERNAL_DEVICE_LIS3DH
-    accelModule(BPT_Accel_LIS3DH(applicationCtx)),
-  #else
     accelModule(BPT_Accel(applicationCtx)),
-  #endif
     cMode(CONTROLLER_MODE_NORMAL),
     cState(STATE_INIT) {
 
@@ -109,8 +101,10 @@ void BPT_Controller::setup(void) {
   cMode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_NORMAL);
   cState = STATE_INIT;
 
+  gpsModule.init();
+  accelModule.init();
 
-
+  /*
   #ifdef EXTERNAL_DEVICE_MT3339
     gpsModule.init( &(applicationCtx->devices[EXTERNAL_DEVICE_MT3339]) );
   #else
@@ -122,6 +116,7 @@ void BPT_Controller::setup(void) {
   #else
     accelModule.init();
   #endif
+  */
 
 
   //TODO: check return

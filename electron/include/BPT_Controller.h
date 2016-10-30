@@ -1,18 +1,7 @@
 #include "BPT.h"
 
-// GPS module include
-#ifdef EXTERNAL_DEVICE_MT3339
-  #include "BPT_GPS_MT3339.h"
-#else
-  #include "BPT_GPS.h"
-#endif
-
-// Accelerometer include
-#ifdef EXTERNAL_DEVICE_LIS3DH
-  #include "BPT_Accel_LIS3DH.h"
-#else
-  #include "BPT_Accel.h"
-#endif
+#include "BPT_GPS.h"
+#include "BPT_Accel.h"
 
 #ifndef _BPT_Controller_h_
 #define _BPT_Controller_h_
@@ -167,18 +156,8 @@ class BPT_Controller: public BPT {
 
     int getAcceleration(accel_t *t);
 
-    // TODO: would it be better if allocation was dynamic?
-    #ifdef EXTERNAL_DEVICE_MT3339
-      BPT_GPS_MT3339 gpsModule;
-    #else
-      BPT_GPS gpsModule;
-    #endif
-
-    #ifdef EXTERNAL_DEVICE_LIS3DH
-      BPT_Accel_LIS3DH accelModule;
-    #else
-      BPT_Accel accelModule;
-    #endif
+    BPT_GPS gpsModule;
+    BPT_Accel accelModule;
 
     // keep track of the number of events that failed to get an ACK
     // after MAX_ACK_EVENT_RETRY retries

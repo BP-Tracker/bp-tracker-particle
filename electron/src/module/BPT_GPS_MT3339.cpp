@@ -4,7 +4,7 @@
 #include "BPT_GPS_MT3339.h"
 
 BPT_GPS_MT3339::BPT_GPS_MT3339(application_ctx_t *applicationCtx)
-  : BPT_GPS(applicationCtx){ }
+  : BPT_Device_Impl(applicationCtx){ }
 
 BPT_GPS_MT3339::~BPT_GPS_MT3339(){ }
 
@@ -64,6 +64,7 @@ bool BPT_GPS_MT3339::reset(void){
   return false;
 }
 
+/*
 void BPT_GPS_MT3339::init(external_device_t *dev){ //TODO
   device = dev;
 
@@ -74,14 +75,27 @@ void BPT_GPS_MT3339::init(external_device_t *dev){ //TODO
   }
   init();
 }
+*/
 
 void BPT_GPS_MT3339::init(void){
 
+  // note EXTERNAL_DEVICE_MT3339 will be defined if this class is used
+  // see BPT_GPS
+  device = &(applicationCtx->devices[EXTERNAL_DEVICE_MT3339]);
+
+  if(device->type != DEVICE_TYPE_GPS){
+    const char *m = "Device type not supported";
+    setStatus(MOD_STATUS_ERROR, m);
+    return;
+  }
+
+  /*
   if(device == 0){
     const char *m = "Cannot call init without an external_device_t";
     setStatus(MOD_STATUS_ERROR, m);
     return;
   }
+  */
 
   uint16_t powerPin = device->wiring_pins[0];
 
@@ -100,17 +114,27 @@ void BPT_GPS_MT3339::shutdown(void){
   }
 }
 
-int BPT_GPS_MT3339::getGpsCoord(gps_coord_t *gpsCoord){
+// NB: expects a gps_coord_t reference
+//TODO:
+int BPT_GPS_MT3339::getIntData(void *gpsCoord, int size){
+
+  if(sizeof(gps_coord_t) != size){ // guard
+    //TODO: set error condition
+    return 0;
+  }
+
   /*
   if(driver.satellites <= 0){ // no GPS fix
     return 0;
   }
   */
 
-  memset(gpsCoord, 0, sizeof(gps_coord_t)); // clears the data
+  gps_coord_t *gpsCoordRef = static_cast<gps_coord_t*>(gpsCoord);
 
-  gpsCoord->lat = driver.latitudeDegrees;
-  gpsCoord->lon = driver.longitudeDegrees;
+  memset(gpsCoordRef, 0, sizeof(gps_coord_t)); // clears the data
+
+  gpsCoordRef->lat = driver.latitudeDegrees;
+  gpsCoordRef->lon = driver.longitudeDegrees;
 
   return driver.satellites; //TODO: return the number of fixed satellites
 }

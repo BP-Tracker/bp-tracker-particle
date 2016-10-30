@@ -7,39 +7,44 @@
 #include "math.h"
 
 BPT_GPS::BPT_GPS(application_ctx_t *applicationCtx)
-  : BPT_Module(applicationCtx){ }
+  : BPT_Module(applicationCtx),
+  #ifdef EXTERNAL_DEVICE_MT3339
+    _deviceImpl(BPT_GPS_MT3339(applicationCtx))
+  #else
+    _deviceImpl(BPT_Device_Impl(applicationCtx))
+  #endif
+  { }
 
 BPT_GPS::~BPT_GPS(){ }
 
 // default implementation
 void BPT_GPS::init(void){
-}
-
-void BPT_GPS::init(external_device_t *device){
+    _deviceImpl.init();
 }
 
 void BPT_GPS::shutdown(){
+  _deviceImpl.shutdown();
 
 }
 
 bool BPT_GPS::update(void){
-  return true;
+  return _deviceImpl.update();
 }
 
 bool BPT_GPS::enable(void){
-  return false;
+  return _deviceImpl.enable();
 }
 
 bool BPT_GPS::disable(void){
-  return false;
+  return _deviceImpl.disable();
 }
 
 bool BPT_GPS::reset(void){
-  return false;
+  return _deviceImpl.reset();
 }
 
 int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord){
-  return 0;
+  return _deviceImpl.getIntData(gpsCoord, sizeof(gps_coord_t));
 }
 
 mod_type_t BPT_GPS::getType(void){

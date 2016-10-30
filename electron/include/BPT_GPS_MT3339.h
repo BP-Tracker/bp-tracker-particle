@@ -1,10 +1,10 @@
-#include "BPT_GPS.h"
+#include "BPT_Device_Impl.h"
 #include "Adafruit_GPS.h"
 
 #ifndef BPT_GPS_MT3339_h
 #define BPT_GPS_MT3339_h
 
-class BPT_GPS_MT3339: public BPT_GPS {
+class BPT_GPS_MT3339: public BPT_Device_Impl {
 
   public:
 
@@ -13,8 +13,6 @@ class BPT_GPS_MT3339: public BPT_GPS {
     ~BPT_GPS_MT3339();
 
     void init();
-
-    void init(external_device_t *dev);
 
     bool enable(void);
 
@@ -27,7 +25,7 @@ class BPT_GPS_MT3339: public BPT_GPS {
     bool update(void);
 
     // returns true if module has a GPS fix and coords have been updated
-    int getGpsCoord(gps_coord_t *gpsCoord);
+    int getIntData(void *gpsCoord, int size);
 
   protected:
 
