@@ -25,7 +25,8 @@ typedef enum {
   PROP__RESERVED        = (0), /* do not use */
   PROP_CONTROLLER_MODE  = (1), /* */
   PROP_GEO_FENCE_RADIUS = (2), /* */
-  PROP_ACCEL_THRESHOLD  = (3)  /* */
+  PROP_ACCEL_THRESHOLD  = (3),  /* */
+  PROP_ACK_ENABLED      = (4) /* set false to disable ack */
 } application_property_t;
 
 
