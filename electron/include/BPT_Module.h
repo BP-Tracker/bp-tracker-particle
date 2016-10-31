@@ -16,8 +16,8 @@
 
 #define MODULE_STATUS_MSG_MAX_LENGTH 128
 
-#define MODULE_GPS		          1
-#define MODULE_ACCELEOMETER     2
+//#define MODULE_GPS		          1
+//#define MODULE_ACCELEOMETER     2
 
 typedef struct {
   uint16_t status;

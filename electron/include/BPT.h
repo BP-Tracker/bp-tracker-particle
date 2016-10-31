@@ -29,6 +29,13 @@ typedef enum {
   PROP_ACK_ENABLED      = (4) /* set false to disable ack */
 } application_property_t;
 
+/* test data types for the controller in the CONTROLLER_MODE_TEST mode */
+typedef enum {
+  TEST_INPUT_GPS        = (1), /* sets the GPS coordinate of device. format: lat,lon */
+  TEST_INPUT_AUTO_GPS   = (2), /* TODO: like TEST_INPUT_GPS expect the coordinate is arbitrarily chosen */
+  TEST_INPUT_ACCEL_INT  = (2)  /* TODO: triggers a 'wake' event on the accelerometer */
+} test_input_t;
+
 
 // bpt:event event codes
 typedef enum {
@@ -39,7 +46,7 @@ typedef enum {
   EVENT_SOFT_PANIC         = ((uint8_t)0x05), /* not enough data to determine panic state */
   EVENT_PANIC              = ((uint8_t)0x06), /* requires ACK event */
   EVENT_PROBE_CONTROLLER   = ((uint8_t)0x07), /* this is a special event a remote device can send to probe the controller */
-  EVENT_TEST               = ((uint8_t)0x08), /* for testing purposes */
+  EVENT_TEST               = ((uint8_t)0x08), /* when the controller is in test mode, all btp:event's use this code */
   EVENT_HARDWARE_FAULT     = ((uint8_t)0x09) /* TODO: can this be trapped? */
 } application_event_t;
 
@@ -62,8 +69,7 @@ typedef enum {
 typedef enum {
   CONTROLLER_MODE_NORMAL        = ((uint8_t)0x01), /*!< the default mode, pwoer saving */
   CONTROLLER_MODE_HIGH_SPEED    = ((uint8_t)0x02), /*!< always on  */
-  CONTROLLER_MODE_SIM_AUTO      = ((uint8_t)0x03), /*!< testing - automatic simulation */
-  CONTROLLER_MODE_SIM_MANUAL    = ((uint8_t)0x04) /*!< testing - manual simulation */
+  CONTROLLER_MODE_TEST          = ((uint8_t)0x03), /*!< test simulation */
 } controller_mode_t;
 
 

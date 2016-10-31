@@ -93,20 +93,14 @@ void BPT_GPS_MT3339::shutdown(void){
   }
 }
 
-// NB: expects a gps_coord_t reference
-//TODO:
+// expects a reference to gps_coord_t
 int BPT_GPS_MT3339::getIntData(void *gpsCoord, int size){
 
   if(sizeof(gps_coord_t) != size){ // guard
-    //TODO: set error condition
+    const char *m = "getIntData expects gps_coord_t ref";
+    setStatus(MOD_STATUS_ERROR, m);
     return 0;
   }
-
-  /*
-  if(driver.satellites <= 0){ // no GPS fix
-    return 0;
-  }
-  */
 
   gps_coord_t *gpsCoordRef = static_cast<gps_coord_t*>(gpsCoord);
 

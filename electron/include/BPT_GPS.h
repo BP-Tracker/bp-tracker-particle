@@ -29,22 +29,41 @@ class BPT_GPS: public BPT_Module {
 
     ~BPT_GPS();
 
-    virtual void init(void);
+    void init(void);
 
-    virtual bool enable(void);
+    bool enable(void);
 
-    virtual bool disable(void);
+    bool disable(void);
 
-    virtual bool reset(void);
+    bool reset(void);
 
-    virtual void shutdown(void);
+    void shutdown(void);
 
-    virtual bool update(void);
+    bool update(void);
 
+    //BPT_Module overrides
     mod_type_t getType(void);
 
+    bool getStatus(uint16_t mask);
+
+    void setStatus(uint16_t status);
+
+    void setStatus(uint16_t status, const char *msg);
+
+    void clearStatus(uint16_t status);
+
+    char *getStatusMsg();
+
+    void setStatusMsg(const char *msg);
+
+
     // returns true if module has a GPS fix and coords have been updated
-    virtual int getGpsCoord(gps_coord_t *gpsCoord); // base class return test data
+    // enable lastKnownPosition to get the last known coordinate if no
+    // GPS fix is available
+    int getGpsCoord(gps_coord_t *gpsCoord, bool lastKnownPosition = false);
+
+    void setTestData(const gps_coord_t *gpsCoord, bool reset = false,
+      int satellites = 1);
 
     float getDistanceTo(gps_coord_t *gpsCoord);
 
@@ -52,9 +71,9 @@ class BPT_GPS: public BPT_Module {
 
   private:
 
-    float toRadians(float degrees);
+    float _toRadians(float degrees);
 
-    float toDegrees(float radians);
+    float _toDegrees(float radians);
 
     // TODO: would it be better if allocation was dynamic?
     #ifdef EXTERNAL_DEVICE_MT3339
@@ -62,6 +81,11 @@ class BPT_GPS: public BPT_Module {
     #else
       BPT_Device_Impl _deviceImpl;
     #endif
+
+    bool _hasTestData;
+    gps_coord_t _testCoord;
+    int _testSatellites;
+
 
 };
 

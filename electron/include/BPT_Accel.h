@@ -18,19 +18,31 @@ class BPT_Accel: public BPT_Module {
 
     ~BPT_Accel();
 
-    virtual void init(void);
+    void init(void);
 
-    virtual bool enable(void);
+    bool enable(void);
 
-    virtual bool disable(void);
+    bool disable(void);
 
-    virtual bool reset(void);
+    bool reset(void);
 
-    virtual void shutdown(void);
+    void shutdown(void);
 
-    virtual bool update(void);
+    bool update(void);
 
     mod_type_t getType(void);
+
+    bool getStatus(uint16_t mask);
+
+    void setStatus(uint16_t status);
+
+    void setStatus(uint16_t status, const char *msg);
+
+    void clearStatus(uint16_t status);
+
+    char *getStatusMsg();
+
+    void setStatusMsg(const char *msg);
 
     // returns 1 if acceleration data exists and sets the data in accel,
     // 0 otherwise
@@ -38,7 +50,14 @@ class BPT_Accel: public BPT_Module {
 
     float getMagnitude(accel_t *accel);
 
+    // set wake to true to simulate a movement event
+    void setTestData(bool wake, bool reset = false);
+
   private:
+
+    bool _hasTestData;
+
+    bool _wakeMode;
 
     #ifdef EXTERNAL_DEVICE_LIS3DH
       BPT_Accel_LIS3DH _deviceImpl;

@@ -108,6 +108,7 @@ int _processRemoteGpsCoord(float lat, float lon, int devNum){
   TODO: is this thread safe?
 */
 // accepts GPS coordinates in the format: "[deviceNum:]latitude,lonitude"
+// TODO: support to send gps automatically every specified interval
 int gpsCoordFn(String command){
 
   int commandIndex = 0;
@@ -220,12 +221,53 @@ int ackEventFn(String command){
   return r == true ? 1 : -1;
 }
 
+// sets up test routines for the controller and modules
+// the data becomes effective once the controller mode is CONTROLLER_MODE_TEST
+// returns 1 if the command was successful
+// format: <test_input_1>[,data1,data2]
+//TODO: input validation
+int testInputFn(String command){
+
+  if(command.length() <= 0 ){
+    Serial.println("app: testInputFn - test_input_1 type is missing");
+    return 0;
+  }
+
+  int sep = command.indexOf(",");
+  String typeStr = command.substring(0, sep);
+  test_input_t type = static_cast<test_input_t>(atoi(typeStr));
+
+  if(type == TEST_INPUT_GPS && sep > 0 ){
+
+    int dataSep = command.indexOf(",", sep);
+    String latS = command.substring(sep + 1, dataSep);
+    String lonS = command.substring(dataSep + 1);
+
+    gps_coord_t t = { (float)atof(latS), (float)atof(lonS) };
+    controller.gpsModule.setTestData(&t);
+
+  }else if(type == TEST_INPUT_AUTO_GPS){
+    gps_coord_t t = { 0.0f, 0.0f }; //TODO: set more sensible auto gps coords
+    controller.gpsModule.setTestData(&t); //TODO reset?
+
+  }else if(type == TEST_INPUT_ACCEL_INT){ // default wake=1 when no data
+
+    int wakeMode =  sep > 0  ? atoi( command.substring(sep) ) : 1;
+    controller.accelModule.setTestData(wakeMode); //TODO reset?
+
+  }else{
+    Serial.printf("app: testInputFn - incorrect format for test_input_t: %u\n", type);
+    return 0;
+  }
+
+  return 1;
+}
+
 
 void setup() {
   Serial.begin(9600); // opens up a Serial port
 
   pinMode(ON_BOARD_LED, OUTPUT);
-
   appCtx.devices = devices;
 
   controller.setup();
@@ -237,41 +279,17 @@ void setup() {
   Particle.function("bpt:register", registerRemoteDeviceFn);
   Particle.function("bpt:ack", ackEventFn);
   Particle.function("bpt:probe", probeControllerFn);
+  Particle.function("bpt:test", testInputFn);
 }
+
 
 void loop(){
 
-  // NB: the controller publishes 'bpt:event' events to the cloud
+  // note: the controller publishes 'bpt:event' events to the cloud
   controller.loop();
-
-  /*
-  bool s = true;
-
-  while(s && publishCount < 1){
-    s = controller.publish(EVENT_TEST, String::format("B%i", publishCount),
-    true, 2);
-    //Serial.printf("app: publish status %u\n", s == true ? 1: 0);
-
-    if(s){
-      publishCount++;
-    }else{
-      if(temp <= 0){
-        temp = publishCount;
-      }
-    }
-  }
-  */
-
 
   if (millis() - stateTime > 10000) {
     stateTime = millis();
-
-    /*
-    for(int i = 0; i < PUBLISH_EVENT_BUFFER_SIZE; i++){
-      unsigned long tt = controller.publishTest[i];
-      Serial.printf("time at index %i = %u\n", i, tt);
-    }
-    */
 
     Serial.printf("app: [state=%u][mode=%u][publishEvent=%u]",
       controller.getState(), controller.getMode(), controller.publishEventCount);
@@ -279,15 +297,64 @@ void loop(){
     Serial.printf("[ackEvent=%u][total=%i][dropped=%i]\n",
       controller.ackEventCount, controller.totalPublishedEvents,
       controller.totalDroppedAckEvents);
-
-    /*
-    if( digitalRead(WKP) == HIGH){
-      Serial.println("loop[wkp=HIGH]");
-    }else{
-      Serial.println("loop[wkp=LOW]");
-    }
-    */
-
   }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+for(int i = 0; i < PUBLISH_EVENT_BUFFER_SIZE; i++){
+  unsigned long tt = controller.publishTest[i];
+  Serial.printf("time at index %i = %u\n", i, tt);
+}
+*/
+
+/*
+if( digitalRead(WKP) == HIGH){
+  Serial.println("loop[wkp=HIGH]");
+}else{
+  Serial.println("loop[wkp=LOW]");
+}
+*/
+
+
+/*
+bool s = true;
+
+while(s && publishCount < 1){
+  s = controller.publish(EVENT_TEST, String::format("B%i", publishCount),
+  true, 2);
+  //Serial.printf("app: publish status %u\n", s == true ? 1: 0);
+
+  if(s){
+    publishCount++;
+  }else{
+    if(temp <= 0){
+      temp = publishCount;
+    }
+  }
+}
+*/

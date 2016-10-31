@@ -94,12 +94,13 @@ void BPT_Accel_LIS3DH::shutdown(void){ //TODO
    }
 }
 
-// NB: expects a accel_t reference
-// get the acceleration
+// returns proper acceleration of the device
+// accel arg expects a reference to accel_t
 int BPT_Accel_LIS3DH::getIntData(void *accel, int size){
 
   if(sizeof(accel_t) != size){ // guard
-    //TODO: set error condition
+    const char *m = "getIntData expects accel_t ref";
+    setStatus(MOD_STATUS_ERROR, m);
     return 0;
   }
 
