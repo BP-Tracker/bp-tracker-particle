@@ -20,8 +20,6 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
     _publishEventFront(0),
     _remoteGpsIndex(0),
     _requestGpsSent(false),
-    //_geoFenceCoord(gps_coord_t()),
-    //_geoFenceCoordAge(-1),
     _geoFenceRadius(0),
     _wakeDetectionConfigured(false),
     _resumePreviousState(STATE_ACTIVATED),
@@ -194,7 +192,7 @@ void BPT_Controller::loop(void) { //TODO
 
         // from WakeOnMovement.cpp
         // This delay should not be necessary, but sometimes things don't seem to work right
-    		// immediately coming out of sleep.
+        // immediately coming out of sleep.
     		delay(500);
       }
 
@@ -591,31 +589,3 @@ int BPT_Controller::_processPublishEvent(){
 
 int BPT_Controller::totalDroppedAckEvents = 0;
 int BPT_Controller::totalPublishedEvents = 0;
-
-
-
-
-
-
-
-
-
-
-//TODO:
-/*
-if(pState == STATE_DISARMED){
-  _geoFenceCoordAge = gpsModule.getGpsCoord(&_geoFenceCoord, true);
-  accelModule.reset();
-
-  // so pState == STATE_ARMED and don't reset stateTime
-  setState(STATE_ARMED, true, 0, false);
-
-}else if(pState == STATE_SLEEP){
-    bool hasMoved = accelModule.hasMoved();
-
-}else{ // state armed
-
-
-
-}
-*/

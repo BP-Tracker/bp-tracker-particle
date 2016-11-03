@@ -14,7 +14,6 @@ BPT_Accel::BPT_Accel(application_ctx_t *applicationCtx)
 
 BPT_Accel::~BPT_Accel(){ }
 
-
 void BPT_Accel::init(void){
     _deviceImpl.init();
 }

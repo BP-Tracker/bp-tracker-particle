@@ -20,7 +20,6 @@ BPT_GPS::BPT_GPS(application_ctx_t *applicationCtx)
 
 BPT_GPS::~BPT_GPS(){ }
 
-// default implementation
 void BPT_GPS::init(void){
     _deviceImpl.init();
 }

@@ -115,7 +115,6 @@ typedef struct {
 */
 #define REQUEST_GPS_TIMEOUT 600
 
-
 /*
   The amount of time to wait (in sec) for a GPS acquisition on
   the device when required before gonig into an OFFLINE state
@@ -123,10 +122,8 @@ typedef struct {
 */
 #define GPS_ACQUISITION_TIMEOUT 36000
 
-
 // Geofence radius in meters
 #define DEFAULT_GEOFENCE_RADIUS 500
-
 
 /*
   The amount of time (in sec) the device is stationary
@@ -134,7 +131,6 @@ typedef struct {
   1 min = 60 sec
 */
 #define AUTO_ARM_AFTER_IDLE_PERIOD 60
-
 
 /*
   Enables the sleep state and the controller automatically wakes up
@@ -152,7 +148,6 @@ typedef struct {
   2 hr = 2 * 60 * 60 = 7200
 */
 #define MAX_PAUSED_STATE_PERIOD 7200
-
 
 /*
   Automatically send GPS coordinates at this frequency (in sec) in the
@@ -296,11 +291,7 @@ class BPT_Controller: public BPT {
     int _remoteGpsIndex; // index of the most recent received coordinate
     bool _requestGpsSent;
 
-    //gps_coord_t _geoFenceCoord;
-    //int _geoFenceCoordAge; // accuracy of _geoFenceCoord when the controller was armed
     float _geoFenceRadius; // in meters
-
-
     bool _wakeDetectionConfigured; // setup a movement interrupt forthe disarmed state
 
     controller_state_t _resumePreviousState; // for STATE_PAUSED/STATE_RESUMED
