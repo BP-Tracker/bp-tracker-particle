@@ -50,6 +50,14 @@ class BPT_Accel: public BPT_Module {
 
     float getMagnitude(accel_t *accel);
 
+    // returns true if the device was moved since last reset
+    // rst -> enable to reset the movement indicator
+    bool hasMoved(bool rst = false);
+
+    // returns the rate the device is moving:
+    // -1 if no data available, 0 if not moving at all
+    int isMoving(); // TODO
+
     // set wake to true to simulate a movement event
     void setTestData(bool wake, bool reset = false);
 

@@ -55,7 +55,7 @@ typedef struct {
   How often to execute the controller's main logic in ms
   when it's awake. Gauge this for power utilization TODO: fine tune this
 */
-#define CONTROLLER_FREQUENCY 1000
+#define CONTROLLER_RUN_FREQUENCY 1000
 
 /*
   The maximum number of cloud publishes permitted at one time. This is
@@ -103,6 +103,75 @@ typedef struct {
 */
 #define ACK_EVENT_RETRY_DELAY 5  /* 5sec 25sec 125sec 625e ...*/
 
+/*
+  The time in ms to wait in the RESET_WAIT_STATE into ONLINE_STATE
+*/
+#define RESET_WAIT_STATE_DELAY 5000
+
+/*
+  The amount of time to wait (in sec) for for GPS data before giving up
+  and entering STATE_SOFT_PANIC.
+  10 mins = 60 * 10 = 600
+*/
+#define REQUEST_GPS_TIMEOUT 600
+
+
+/*
+  The amount of time to wait (in sec) for a GPS acquisition on
+  the device when required before gonig into an OFFLINE state
+  10 hours = 10 * 60 * 60 = 36000
+*/
+#define GPS_ACQUISITION_TIMEOUT 36000
+
+
+// Geofence radius in meters
+#define DEFAULT_GEOFENCE_RADIUS 500
+
+
+/*
+  The amount of time (in sec) the device is stationary
+  before automatically moving the to ARMED state.
+  1 min = 60 sec
+*/
+#define AUTO_ARM_AFTER_IDLE_PERIOD 60
+
+
+/*
+  Enables the sleep state and the controller automatically wakes up
+  after this time (in sec) has elsaped without any movement detection
+  4 hr = 4 * 60 * 60 = 14400
+  Set to 0 to disable
+*/
+// #define AUTO_WAKE_AFTER_SLEEP_PERIOD 14000
+#define SLEEP_STATE_PERIOD 0
+
+/*
+  The maximum time (in sec) the controller will stay paused before
+  automatically resuming. Set to 0 to allow an indefinite time until
+  the controller recieves input form a remote device
+  2 hr = 2 * 60 * 60 = 7200
+*/
+#define MAX_PAUSED_STATE_PERIOD 7200
+
+
+/*
+  Automatically send GPS coordinates at this frequency (in sec) in the
+  PANIC state. Set zero to disable. Use values higher than 1 sec
+*/
+#define PANIC_GPS_PUBLISH_FREQUENCY 0
+
+/*
+  The max number of GPS publish events in the panic state
+*/
+#define MAX_PANIC_GPS_PUBLISH_EVENTS 1
+
+/*
+  Wait this time (in sec) before throwing a CONTROLLER_ERROR event.
+  This is used in some states the controller can be stuck in.
+  5 mins = 5 * 60 = 300
+  TODO: tune this parameter
+*/
+#define CONTROLLER_ERROR_TIMEOUT 300
 
 class BPT_Controller: public BPT {
 
@@ -117,7 +186,10 @@ class BPT_Controller: public BPT {
     bool setMode(controller_mode_t m);
     controller_mode_t getMode();
 
-    bool setState(controller_state_t s);
+    // _force, _resetStateTime and _reserveSlots is used by the controller
+    bool setState(controller_state_t s,
+      bool _force = false, int _reserveSlots = 1, bool _resetStateTime = true);
+
     controller_state_t getState();
 
     void loop(void);
@@ -152,9 +224,13 @@ class BPT_Controller: public BPT {
         uint8_t forDeviceNum = 0, int _numOfFreeSlots = 1);
 
 
-    bool getGpsCoord(gps_coord_t *c);
+    int getGpsCoord(gps_coord_t *c);
 
     int getAcceleration(accel_t *t);
+
+    bool hasException();
+
+    const char* getException();
 
     BPT_GPS gpsModule;
     BPT_Accel accelModule;
@@ -177,9 +253,9 @@ class BPT_Controller: public BPT {
     controller_mode_t cMode;   /* current controller mode */
     controller_state_t cState; /* current state */
     controller_state_t pState; /* previous state */
-    unsigned long controllerStateTime;
-    unsigned long publishTime;
-    unsigned long publishAckTime;
+    unsigned long _stateTime;
+    unsigned long _publishTime;
+    unsigned long _publishAckTime;
 
 
     // returns the number of events processed and published (if any)
@@ -197,19 +273,39 @@ class BPT_Controller: public BPT {
     // set to false if any events set by the controller
     // doesn't need to be acknowledged.
     // default is true see PROP_ACK_ENABLED
-    bool ackEventsEnabled;
+    bool _ackEventsEnabled;
 
     // sets t to millis()
     void _resetTime(unsigned long *t);
 
+    void _checkPublishQueue();
+    void _checkAckQueue();
+
+    // returns and logs the controller message: TODO
+    void _logException(const char *msg, bool reset = false);
+    bool _hasException;
+    char _exceptionMessage[64];
+
     // FIFO queue
-    publish_event_t publishEventQueue[PUBLISH_EVENT_BUFFER_SIZE];
-    int publishEventFront;
+    publish_event_t _publishEventQueue[PUBLISH_EVENT_BUFFER_SIZE];
+    int _publishEventFront;
 
-    ack_event_t ackEventBag[ACK_EVENT_BUFFER_SIZE];
+    ack_event_t _ackEventBag[ACK_EVENT_BUFFER_SIZE];
 
-    remote_gps_coord_t remoteGpsCoord[MAX_REMOTE_GPS_COORDS];
-    int remoteGpsIndex; // index of the most recent received coordinate
+    remote_gps_coord_t _remoteGpsCoord[MAX_REMOTE_GPS_COORDS];
+    int _remoteGpsIndex; // index of the most recent received coordinate
+    bool _requestGpsSent;
+
+    //gps_coord_t _geoFenceCoord;
+    //int _geoFenceCoordAge; // accuracy of _geoFenceCoord when the controller was armed
+    float _geoFenceRadius; // in meters
+
+
+    bool _wakeDetectionConfigured; // setup a movement interrupt forthe disarmed state
+
+    controller_state_t _resumePreviousState; // for STATE_PAUSED/STATE_RESUMED
+
+    int _panicGpsPublishEventCount;
 };
 
 #endif

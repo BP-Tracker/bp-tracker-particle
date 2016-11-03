@@ -24,7 +24,7 @@
 typedef enum {
   PROP__RESERVED        = (0), /* do not use */
   PROP_CONTROLLER_MODE  = (1), /* */
-  PROP_GEO_FENCE_RADIUS = (2), /* */
+  PROP_GEOFENCE_RADIUS = (2), /* */
   PROP_ACCEL_THRESHOLD  = (3),  /* */
   PROP_ACK_ENABLED      = (4) /* set false to disable ack */
 } application_property_t;
@@ -40,36 +40,67 @@ typedef enum {
 // bpt:event event codes
 typedef enum {
   EVENT_STATE_CHANGE       = ((uint8_t)0x01), /* controller changed state */
-  EVENT_REQUEST_GPS        = ((uint8_t)0x02), /* this ACK comes from a bpt:gps */
+  EVENT_REQUEST_GPS        = ((uint8_t)0x02), /* TODO: can this ack also come from a bpt:gps event */
   EVENT_BATTERY_LOW 	     = ((uint8_t)0x03), /* requires ACK event */
   EVENT_NO_GPS_SIGNAL      = ((uint8_t)0x04),
   EVENT_SOFT_PANIC         = ((uint8_t)0x05), /* not enough data to determine panic state */
   EVENT_PANIC              = ((uint8_t)0x06), /* requires ACK event */
   EVENT_PROBE_CONTROLLER   = ((uint8_t)0x07), /* this is a special event a remote device can send to probe the controller */
   EVENT_TEST               = ((uint8_t)0x08), /* when the controller is in test mode, all btp:event's use this code */
-  EVENT_HARDWARE_FAULT     = ((uint8_t)0x09) /* TODO: can this be trapped? */
+  EVENT_ERROR              = ((uint8_t)0x09), /* TODO: triggered when...  */
+  EVENT_HARDWARE_FAULT     = ((uint8_t)0x0A) /* TODO: can this be trapped? */
 } application_event_t;
 
 
+#define NUM_CONTROLLER_STATES 14 /* NB: update this when states are added/removed */
+
+/* the controller_state_t number that begins the internal states */
+#define INTERNAL_STATES_INDEX 8
+
+// NB: The values need to be sequential beginning at 1
 typedef enum {
-  STATE_BOOT_WAIT        = ((uint8_t)0x01),
+  /* Public states */ //TODO: setup a sane order
+  STATE_SOFT_PANIC       = ((uint8_t)0x01),
   STATE_RESET            = ((uint8_t)0x02),
   STATE_RESET_WAIT       = ((uint8_t)0x03),
   STATE_INIT             = ((uint8_t)0x04),
-  STATE_ONLINE           = ((uint8_t)0x05), //??
-  STATE_ONLINE_WAIT      = ((uint8_t)0x06),
+  STATE_ACTIVATED        = ((uint8_t)0x05), // public event?
+  STATE_DEACTIVATED      = ((uint8_t)0x0B), // ??
   STATE_ARMED            = ((uint8_t)0x07),
+
   STATE_DISARMED         = ((uint8_t)0x08),
+
+  STATE_PAUSED           = ((uint8_t)0x0E), // for testing
+  STATE_RESUMED          = ((uint8_t)0x0F), // for testing
+
+  /* Private states - these should not be set from the cloud/client. See BPT_Controller::setState. */
+  STATE_ONLINE_WAIT      = ((uint8_t)0x06),
   STATE_OFFLINE          = ((uint8_t)0x09),
   STATE_PANIC            = ((uint8_t)0x0A),
-  STATE_DEACTIVATED      = ((uint8_t)0x0B),
-  STATE_DEACTIVATED_WAIT = ((uint8_t)0x0C)
+  STATE_SLEEP            = ((uint8_t)0x0D),
+
+
 } controller_state_t;
 
 typedef enum {
-  CONTROLLER_MODE_NORMAL        = ((uint8_t)0x01), /*!< the default mode, pwoer saving */
-  CONTROLLER_MODE_HIGH_SPEED    = ((uint8_t)0x02), /*!< always on  */
-  CONTROLLER_MODE_TEST          = ((uint8_t)0x03), /*!< test simulation */
+  /*
+    The default mode, uses accelerometer for power saving
+  */
+  CONTROLLER_MODE_NORMAL        = ((uint8_t)0x01),
+
+  /*
+    Always on, disables accelerometer, GPS data is polled as
+    fast as possible.
+   */
+  CONTROLLER_MODE_HIGH_SPEED    = ((uint8_t)0x02),
+
+  /*
+    Puts the controller into testing mode to permit mocking
+    states such as the device's GPS coordinates and wake modes.
+
+    In this mode all bpt:event event are of type EVENT_TEST
+  */
+  CONTROLLER_MODE_TEST          = ((uint8_t)0x03),
 } controller_mode_t;
 
 

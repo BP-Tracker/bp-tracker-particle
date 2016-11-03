@@ -44,8 +44,22 @@ float BPT_Accel::getMagnitude(accel_t *accel){
     + (accel->z * accel->z));
 }
 
+// TODO: use a rolling window here
+int BPT_Accel::isMoving(){
+  return 1; //TODO
+}
+
 int BPT_Accel::getAcceleration(accel_t *accel){
   return _deviceImpl.getIntData(accel, sizeof(accel_t));
+}
+
+bool BPT_Accel::hasMoved(bool rst){
+  bool s = _deviceImpl.getStatus( MOD_STATUS_INTERRUPT );
+
+  if(rst && s){
+    reset();
+  }
+  return s;
 }
 
 mod_type_t BPT_Accel::getType(void){

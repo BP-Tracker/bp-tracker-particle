@@ -109,7 +109,9 @@ int BPT_GPS_MT3339::getIntData(void *gpsCoord, int size){
   gpsCoordRef->lat = driver.latitudeDegrees;
   gpsCoordRef->lon = driver.longitudeDegrees;
 
-  return driver.satellites; //TODO: return the number of fixed satellites
+  // driver.satellites
+
+  return 0; //TODO: return the age of the signal
 }
 
 Adafruit_GPS BPT_GPS_MT3339::driver = Adafruit_GPS();

@@ -98,7 +98,7 @@ int _processRemoteGpsCoord(float lat, float lon, int devNum){
   state accordingly. This is used when the controller publishes a request
   to remote devices.
 
-  2 - otherwise, it returns the number of satellites in the gps signal
+  2 - otherwise, it returns the age of the gps signal in seconds
   and publishes the coords of the device in the format:
   latitude,longitude
 
@@ -123,12 +123,12 @@ int gpsCoordFn(String command){
   }
 
   int r = controller.getGpsCoord(&gpsCoord);
-  float lat = r == 0 ? 0 : gpsCoord.lat;
-  float lon = r == 0 ? 0 : gpsCoord.lon;
+  float lat = r < 0 ? 0 : gpsCoord.lat;
+  float lon = r < 0 ? 0 : gpsCoord.lon;
 
   Serial.printf("app: gpsCoordFn - [status=%u][lat=%f][log=%f]", r, lat, lon);
 
-  if(r > 0){
+  if(r >= 0){
     Particle.publish("bpt:gps", String::format("%f,%f", lat, lon), 60, PRIVATE);
   }else{
     Particle.publish("bpt:event", String::format("%u", EVENT_NO_GPS_SIGNAL), 60, PRIVATE);
@@ -287,6 +287,10 @@ void loop(){
 
   // note: the controller publishes 'bpt:event' events to the cloud
   controller.loop();
+
+  if(controller.hasException()){
+    Serial.printf("app: controller exception: %s\n", controller.getException() );
+  }
 
   if (millis() - stateTime > 10000) {
     stateTime = millis();

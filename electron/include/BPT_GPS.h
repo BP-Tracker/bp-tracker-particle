@@ -13,9 +13,6 @@
 // Default GPS point-to-point distance formula (HAVERSINE_FORMULA)
 #define DEFAULT_DISTANCE_CALC ((uint8_t)0x01)
 
-// Geofence radius in meters
-#define DEFAULT_GEOFENCE_RADIUS 500
-
 // Mean radius of Earth in meters
 #define MEAN_EARTH_RADIUS 6371e+3
 
@@ -57,13 +54,13 @@ class BPT_GPS: public BPT_Module {
     void setStatusMsg(const char *msg);
 
 
-    // returns true if module has a GPS fix and coords have been updated
+    // returns true ( 0 or greater) if module has a GPS fix and coords have been updated
     // enable lastKnownPosition to get the last known coordinate if no
     // GPS fix is available
-    int getGpsCoord(gps_coord_t *gpsCoord, bool lastKnownPosition = false);
+    int getGpsCoord(gps_coord_t *gpsCoord, bool useLastKnown = false);
 
     void setTestData(const gps_coord_t *gpsCoord, bool reset = false,
-      int satellites = 1);
+      int age = 0);
 
     float getDistanceTo(gps_coord_t *gpsCoord);
 
@@ -84,7 +81,7 @@ class BPT_GPS: public BPT_Module {
 
     bool _hasTestData;
     gps_coord_t _testCoord;
-    int _testSatellites;
+    int _testGpsCoordAge;
 
 
 };

@@ -15,7 +15,7 @@ BPT_GPS::BPT_GPS(application_ctx_t *applicationCtx)
   #endif
   _hasTestData(0),
   _testCoord(gps_coord_t()),
-  _testSatellites(0)
+  _testGpsCoordAge(0)
   { }
 
 BPT_GPS::~BPT_GPS(){ }
@@ -73,8 +73,8 @@ void BPT_GPS::setStatusMsg(const char *msg){
   return _deviceImpl.setStatusMsg(msg);
 }
 
-int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord, bool lastKnownPosition){
-  //TODO: return lastKnowPosition if data not available
+int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord, bool useLastKnown){
+  //TODO: return useLastKnown if data not available
 
   if(_hasTestData && applicationCtx->mode == CONTROLLER_MODE_TEST){
 
@@ -82,7 +82,7 @@ int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord, bool lastKnownPosition){
     gpsCoord->lat = _testCoord.lat;
     gpsCoord->lon = _testCoord.lon;
 
-    return _testSatellites;
+    return _testGpsCoordAge;
   }
 
   return _deviceImpl.getIntData(gpsCoord, sizeof(gps_coord_t));
@@ -90,9 +90,9 @@ int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord, bool lastKnownPosition){
 
 // sets this coordinate info to be returned by getGpsCoord when
 // the controller mode is CONTROLLER_MODE_TEST
-void BPT_GPS::setTestData(const gps_coord_t *gpsCoord, bool reset, int s){
+void BPT_GPS::setTestData(const gps_coord_t *gpsCoord, bool reset, int age){
   _hasTestData = !reset;
-  _testSatellites = s;
+  _testGpsCoordAge = age; // negative means no vaild data
   _testCoord.lat = gpsCoord->lat;
   _testCoord.lon = gpsCoord->lon;
 }
@@ -113,7 +113,7 @@ float BPT_GPS::getDistanceTo(gps_coord_t *gpsCoord, distance_calc_t formula){
   Serial.printf("getDistanceTo called device coord: [lat=%f][lon=%f]\n",
     deviceCoord.lat, deviceCoord.lon);
 
-  if(r <= 0){
+  if(r < 0){
     return d; // -1 no gps fix
   }
 
