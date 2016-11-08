@@ -7,6 +7,7 @@
   Constants
 *********************************************/
 int ON_BOARD_LED = D7;
+const int SERIAL_COMMAND_BUFFER_SIZE = 64;
 
 //SYSTEM_THREAD(ENABLED); //TODO: is this required?
 
@@ -23,12 +24,58 @@ gps_coord_t gpsCoord;
 unsigned long stateTime = 0;
 int publishCount = 0;
 int temp = 0;
+
+char serialBuffer[SERIAL_COMMAND_BUFFER_SIZE];
+int serialBufferIndex = 0;
+bool serialLatch = false;
+
 BPT_Controller controller = BPT_Controller(&appCtx);
 FuelGauge fuelGauge;
 
 /*********************************************
   Functions
 *********************************************/
+
+/**
+ * Publishes the event using Particle.publish and Serial functions
+ * @param name The registered event name
+ * @param data  The data
+ */
+void publish(String name, const char *data){
+  //Particle.publish(name, data, 60, PRIVATE); //TODO
+  Serial.printf("PUBLISH[%s~%s]\n", name.c_str(), data);
+}
+
+
+// override
+void loop(){
+  controller.loop();
+
+  if(controller.hasException()){
+    Serial.printf("app: controller exception: %s\n", controller.getException() );
+  }
+
+  if (millis() - stateTime > 10000) {
+    stateTime = millis();
+
+
+    //for(int i = 0; i < SERIAL_COMMAND_BUFFER_SIZE; i++){
+    //  Serial.print(serialBuffer[i]);
+    //}
+   //Serial.println();
+
+
+
+    Serial.printf("app: [state=%u][mode=%u][publishEvent=%u]",
+      controller.getState(), controller.getMode(), controller.publishEventCount);
+
+    Serial.printf("[ackEvent=%u][total=%i][dropped=%i]\n",
+      controller.ackEventCount, controller.totalPublishedEvents,
+      controller.totalDroppedAckEvents);
+  }
+
+}
+
 
 // get or set the current state of the controller (controller_state_t type)
 // If setting the state, the return is 0 if the state was changed, -1 otherwise
@@ -39,7 +86,7 @@ int stateFn(String command){
 
   //TODO
 
-  Particle.publish("bpt:state", String::format("%u", s), 60, PRIVATE);
+  publish("bpt:state", String::format("%u", s));
 
   return s;
 }
@@ -263,7 +310,64 @@ int testInputFn(String command){
   return 1;
 }
 
+// Command format: CALL[<event name>~<command>]
 
+
+
+void _processSerialCommand(String event, String command){
+  Serial.printf("app: _processSerialCommand - [%s][%s]\n",
+    event.c_str(), command.c_str());
+
+  int r = -1;
+
+  if(event.startsWith("bpt:state")){
+    r = stateFn(command);
+  }
+
+  publish("bpt:event",
+    String::format("%u,%s,%i", EVENT_SERIAL_COMMAND, event.c_str(), r));
+}
+
+/**
+ * Reads serial input and calls the matching cloud function with the passed in
+ * command. Format: CALL[<event name>~<command>]\n
+ *
+ * NB: the function is latched, don't send commands too quickly (wait for OK)
+ */
+void serialEvent(){
+  char c = Serial.read();
+
+  if(serialLatch){
+    Serial.println("NOK");
+    Serial.println("app: warning - serial buffer not accepting input");
+    return;
+  }
+
+  serialBuffer[serialBufferIndex++] = c;
+
+  if( c != '\n' && serialBufferIndex >= SERIAL_COMMAND_BUFFER_SIZE ){
+    Serial.println("app: warning - serial input exceeds buffer, discarding command");
+    serialBufferIndex = 0;
+  }
+
+  if(c == '\n'){
+    serialLatch = true;
+    serialBuffer[serialBufferIndex - 1] = '\0'; // squash newline
+
+    // example CALL[bpt:state~]
+    String s = String(serialBuffer).replace("CALL[", "");
+    if(s.charAt(s.length() - 1) == ']'){
+      s = s.substring(0, s.length() - 1);
+    }
+    int sep = s.indexOf('~');
+    _processSerialCommand(s.substring(0, sep), s.substring(sep + 1));
+    Serial.println("OK");
+    serialBufferIndex = 0;
+    serialLatch = false;
+  }
+}
+
+//override
 void setup() {
   Serial.begin(9600); // opens up a Serial port
 
@@ -282,28 +386,6 @@ void setup() {
   Particle.function("bpt:test", testInputFn);
 }
 
-
-void loop(){
-
-  // note: the controller publishes 'bpt:event' events to the cloud
-  controller.loop();
-
-  if(controller.hasException()){
-    Serial.printf("app: controller exception: %s\n", controller.getException() );
-  }
-
-  if (millis() - stateTime > 10000) {
-    stateTime = millis();
-
-    Serial.printf("app: [state=%u][mode=%u][publishEvent=%u]",
-      controller.getState(), controller.getMode(), controller.publishEventCount);
-
-    Serial.printf("[ackEvent=%u][total=%i][dropped=%i]\n",
-      controller.ackEventCount, controller.totalPublishedEvents,
-      controller.totalDroppedAckEvents);
-  }
-
-}
 
 
 

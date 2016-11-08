@@ -2,7 +2,7 @@
 /*!
     @file     BPT.h (BP Tracker firmware)
     @author   Derek Benda
-    @license  LPGL (see Licence.txt)
+    @license  MIT (see Licence.txt)
 
     v1.0  - First release
 */
@@ -47,8 +47,9 @@ typedef enum {
   EVENT_PANIC              = ((uint8_t)0x06), /* requires ACK event */
   EVENT_PROBE_CONTROLLER   = ((uint8_t)0x07), /* this is a special event a remote device can send to probe the controller */
   EVENT_TEST               = ((uint8_t)0x08), /* when the controller is in test mode, all btp:event's use this code */
-  EVENT_ERROR              = ((uint8_t)0x09), /* TODO: triggered when...  */
-  EVENT_HARDWARE_FAULT     = ((uint8_t)0x0A) /* TODO: can this be trapped? */
+  EVENT_SERIAL_COMMAND     = ((uint8_t)0x09), /* a command was received via the serial interface */
+  EVENT_ERROR              = ((uint8_t)0x0A), /* TODO: triggered when...  */
+  EVENT_HARDWARE_FAULT     = ((uint8_t)0x0B) /* TODO: can this be trapped? */
 } application_event_t;
 
 
@@ -63,7 +64,6 @@ typedef enum {
   STATE_SOFT_PANIC       = ((uint8_t)0x01),
   STATE_RESET            = ((uint8_t)0x02),
   STATE_RESET_WAIT       = ((uint8_t)0x03),
-  STATE_INIT             = ((uint8_t)0x04),
   STATE_ACTIVATED        = ((uint8_t)0x05), // public event?
   STATE_DEACTIVATED      = ((uint8_t)0x0B), // ??
   STATE_ARMED            = ((uint8_t)0x07),

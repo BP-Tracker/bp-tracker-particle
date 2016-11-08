@@ -37,8 +37,10 @@ void BPT_Controller::setup(void) {
 
   _ackEventsEnabled = getProperty(PROP_ACK_ENABLED, true);
   _geoFenceRadius = getProperty(PROP_GEOFENCE_RADIUS, DEFAULT_GEOFENCE_RADIUS);
-  cMode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_NORMAL);
-  cState = STATE_INIT;
+  cMode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_TEST); //TODO: change later
+  cState = STATE_ONLINE_WAIT;
+
+  applicationCtx->mode = cMode;
 
   gpsModule.init();
   accelModule.init();
@@ -90,7 +92,14 @@ void BPT_Controller::loop(void) { //TODO
 
     case STATE_RESET_WAIT:
       if(TIME_DELTA(_stateTime) >= RESET_WAIT_STATE_DELAY){
-        setState(STATE_ACTIVATED, true);
+
+        if( applicationCtx->mode == CONTROLLER_MODE_TEST
+            && pState != STATE_RESUMED){ // in TEST_MODE go to paused state
+          setState(STATE_PAUSED, true);
+        }else{
+          setState(STATE_ACTIVATED, true);
+        }
+
         break;
       }
       break;
@@ -143,6 +152,10 @@ void BPT_Controller::loop(void) { //TODO
         }
       }
       break; // end of actived state
+    case STATE_DEACTIVATED:
+      //TODO
+      break;
+
     case STATE_OFFLINE:
       // TODO
       break;
@@ -230,12 +243,15 @@ void BPT_Controller::loop(void) { //TODO
 
     case STATE_PAUSED: // do nothing: state triggered externally
 
+      //FIXME: the TIME_DELTA on _stateTime should not change
+
       if(pState != STATE_PAUSED){
         _resumePreviousState = pState;
         setState(STATE_PAUSED, true, 0); // so pState == STATE_PAUSED
       }
 
-      if( TIME_DELTA_SEC(_stateTime) >= MAX_PAUSED_STATE_PERIOD ){
+      if( MAX_PAUSED_STATE_PERIOD != 0
+          && TIME_DELTA_SEC(_stateTime) >= MAX_PAUSED_STATE_PERIOD ){
         setState(STATE_RESUMED, true);
       }
       break;

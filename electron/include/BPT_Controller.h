@@ -145,9 +145,9 @@ typedef struct {
   The maximum time (in sec) the controller will stay paused before
   automatically resuming. Set to 0 to allow an indefinite time until
   the controller recieves input form a remote device
-  2 hr = 2 * 60 * 60 = 7200
+  2 hr = 2 * 60 * 60 = 7200 TODO: change it
 */
-#define MAX_PAUSED_STATE_PERIOD 7200
+#define MAX_PAUSED_STATE_PERIOD 0
 
 /*
   Automatically send GPS coordinates at this frequency (in sec) in the
