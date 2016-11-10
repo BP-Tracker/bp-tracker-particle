@@ -121,8 +121,9 @@ BPTSerial.prototype = extend(BPT.prototype, {
   },
 
   //credit: https://github.com/spark/particle-cli
+  //console.log("_issueSerialCommand", device, command);
   _issueSerialCommand: function(device, command) {
-    console.log("_issueSerialCommand", device, command);
+
     if (!device) {
       return when.reject('no serial port provided');
     }
@@ -140,11 +141,13 @@ BPTSerial.prototype = extend(BPT.prototype, {
       }, failDelay);
 
       //FIXME: not working
+      /*
       serialPort.on('data', function (data) {
         //console.log("FDFSFDF", data.toString());
         clearTimeout(failTimer);
         resolve(data);
       });
+      */
 
       serialPort.open(function (err) {
         if (err) {
@@ -161,7 +164,7 @@ BPTSerial.prototype = extend(BPT.prototype, {
               return;
             }
             clearTimeout(failTimer);
-            resolve();
+            resolve(command);
           });
         });
       });
@@ -303,103 +306,3 @@ BPTSerial.prototype = extend(BPT.prototype, {
 });
 
 module.exports = BPTSerial;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-  var promise = when.resolve(when.promise(function(resolve, reject, notify){
-    resolve(5);
-  }));
-  console.log("P", promise);
-
-  var promise2 = promise.then(function(){
-    console.log("Success: args", arguments);
-
-    return when.reject('y');
-
-  }, function(){
-    return when.reject("problem");
-    console.log("Error: args", arguments);
-  });
-
-  console.log('promise2', promise2);
-
-  promise2.then(function(){
-    console.log("Success2: args", arguments);
-  }, function(){
-    console.log("Error2: args", arguments);
-    console.log('promise22', promise2);
-  });
-  */
-
-//console.log(process);
-
-//monitor.on('message', this._onMonitorEvent );
-//monitor.send({ foo: "testing IPC"});
-
-//console.log('gggg');
-
-//
-
-
-      // self.findDevices(function(devices){
-      //   if (devices.length === 1) {
-      //     self.cfg.port = devices[0].port;
-      //     self.cfg.coreType = devices[0].type; // Electron etc...
-      //
-      //
-      //     //process.on('SIGINT', self._closePort);
-      //     //process.on('SIGTERM', self._closePort);
-      //
-      //     self.serialPort = new SerialPort(self.cfg.port, {
-      //       baudRate: self.cfg.baud,
-      //       autoOpen: false
-      //     });
-      //
-      //     self.serialPort.on('data', function (data) {
-      //     	process.stdout.write(data.toString());
-      //     });
-      //
-      //     self.serialPort.open(function (err) {
-      //     	if (err) {
-      //     		console.error('Serial err: ' + err);
-      //     		console.error('Serial problems, please reconnect the device.');
-      //     	}
-      //
-      //
-      //     self.serialPort.write(' h h h', function() {
-    	// 				self.serialPort.drain();
-      //
-      //         self.serialPort.close();
-    	// 			});
-      //
-      //     });
-      //
-      //
-      //
-      //   }else{
-      //     // more than one device found
-      //     self._throwException("More than one particle device discovered."
-      //         + " Please specify the port in the configuration.", true);
-      //   }
-      // });
-
-  //  }
-//var monitor = child_process.fork(p, [device.port, device.baud] );
-  //  console.log('hhh', self.cfg);

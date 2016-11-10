@@ -11,11 +11,23 @@ var BPTSerial = require('./lib/bpt-serial');
  */
 var SHOW_RAW_DATA = false;
 
+/**
+ * Whether or not to monitor for EVENT_SERIAL_COMMAND events.
+ * @type {Boolean}
+ */
+var SUPPRESS_SERIAL_EVENTS = true;
 
 
 new BPTSerial({ baud: 9600 }, function(error, event, data){
   if(error){
     console.log(chalk.bold.red("! ") + chalk.bold.white(error));
+  }
+
+  if(SUPPRESS_SERIAL_EVENTS && event == "bpt:event"){
+    var e = BPTSerial.prototype.EVENTS.EVENT_SERIAL_COMMAND;
+    if(data.startsWith(e)){
+      return;
+    }
   }
 
   var date = new Date().toISOString();

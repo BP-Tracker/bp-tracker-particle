@@ -8,16 +8,22 @@ BPT.prototype = {
   /* controller states */
   // TODO: update values
   STATES: {
-    STATE_SOFT_PANIC  : 0x01,
-    STATE_RESET       : 0x02,
-    STATE_RESET_WAIT  : 0x03,
-    STATE_ACTIVATED   : 0x05,
-    STATE_DEACTIVATED : 0x0B,
-    STATE_ARMED       : 0x07,
-    STATE_DISARMED    : 0x08,
-    STATE_PAUSED      : 0x0E, // for testing
-    STATE_RESUMED     : 0x0F, // for testing
+    STATE_OFFLINE              : 0x01,
+    STATE_DEACTIVATED          : 0x02,
+    STATE_RESET                : 0x03,
+    STATE_ARMED                : 0x04,
+    STATE_DISARMED             : 0x05,
+    STATE_PANIC                : 0x06,
+    STATE_PAUSED               : 0x07, // for testing
+    STATE_RESUMED              : 0x08, // for testing
+
+    INTERNAL_STATE_ACTIVATED   : 0x09,
+    INTERNAL_STATE_SOFT_PANIC  : 0x0A,
+    INTERNAL_STATE_ONLINE_WAIT : 0x0B,
+    INTERNAL_STATE_RESET_WAIT  : 0x0C,
+    INTERNAL_STATE_SLEEP       : 0x0D
   },
+
 
   /* test_input_t types */
   TEST_INPUTS: {

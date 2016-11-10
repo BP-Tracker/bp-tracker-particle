@@ -7,21 +7,92 @@ var BPTSerial = require('./lib/bpt-serial');
 
 var bpt = new BPTSerial({ baud: 9600, monitor: false });
 
-
 /**
- * Reports the result code of the API function returned from
- * the controller
- * @return {[type]} [description]
+ * The time to wait before showing the main choices
+ * @type {Number} Time in ms
  */
-function reportFunctionResp(){
+var choiceDelay = 500;
 
+var mainChoices = [
+  'Show options again',
+  'bpt:ack',
+  'bpt:status',
+  'bpt:state',
+  'bpt:gps',
+  'bpt:diag',
+  'bpt:register',
+  'bpt:probe',
+  'bpt:test'
+];
 
-
-}
+var funcMap = {
+  'Show options again' : callFunctionPrompt,
+  'bpt:ack'            : callAckPrompt,
+  'bpt:status'         : callStatusPrompt,
+  'bpt:state'          : callStatePrompt,
+  'bpt:gps'            : callGpsPrompt,
+  'bpt:diag'           : callDiagPrompt,
+  'bpt:register'       : callRegisterPrompt,
+  'bpt:probe'          : callProbePrompt,
+  'bpt:test'           : callTestPrompt
+};
 
 function reportError(error){
-  console.log("error " + error);
+  console.log(chalk.bold.red("! ") + "error " + error);
+}
 
+function reportDone(command){
+  console.log(chalk.yellow("! " + command));
+}
+
+function callRegisterPrompt(){ //TODO
+  callFunctionPrompt();
+}
+
+function callAckPrompt() {
+  inquirer.prompt([{
+    type: 'rawlist',
+    message: chalk.bold.white('Choose an event'),
+    name: 'bpt_event_id',
+    pageSize: _.keys(bpt.EVENTS).length,
+    choices: _.keys(bpt.EVENTS),
+  },{
+    type: 'input',
+    message: chalk.dim("[data1[,data2..]]"),
+    name: 'bpt_data',
+  }]).then(function(ans){
+      var cmd = bpt.EVENTS[ans.bpt_event_id];
+
+      if(ans.bpt_data){
+        cmd = cmd + "," + ans.bpt_data;
+      }
+
+      bpt.sendCommand("bpt:ack", cmd ).done(reportDone, reportError);
+      setTimeout(callFunctionPrompt, choiceDelay);
+  });
+}
+
+function callTestPrompt(){
+  inquirer.prompt([{
+    type: 'rawlist',
+    message: chalk.bold.white('Choose a test input'),
+    name: 'bpt_test_id',
+    pageSize: _.keys(bpt.TEST_INPUTS).length,
+    choices: _.keys(bpt.TEST_INPUTS),
+  },{
+    type: 'input',
+    message: chalk.dim("[data1[,data2..]]"),
+    name: 'bpt_data',
+  }]).then(function(ans){
+      var cmd = bpt.TEST_INPUTS[ans.bpt_test_id];
+
+      if(ans.bpt_data){
+        cmd = cmd + "," + ans.bpt_data;
+      }
+
+      bpt.sendCommand("bpt:test", cmd ).done(reportDone, reportError);
+      setTimeout(callFunctionPrompt, choiceDelay);
+  });
 }
 
 function callFunctionPrompt(){
@@ -31,30 +102,94 @@ function callFunctionPrompt(){
   		type: 'rawlist',
   		name: 'func',
   		message: chalk.bold.white('Select a function to call'),
-  		choices: [
-        "Show options again",
-        'bpt:ack',
-        'bpt:status',
-        'bpt:state',
-        'bpt:gps',
-        'bpt:diag',
-        'bpt:register',
-        'bpt:probe',
-        'bpt:test'
-      ],
+  		choices: mainChoices,
+      pageSize: mainChoices.length,
       default: 0
   	}
   ]).then(function(ans) {
     console.log('ans', ans);
 
-    if(ans.func === "Show options again"){
-      callFunctionPrompt();
-    }else if(ans.func === 'bpt:state'){
-      callStatePrompt();
+    if(funcMap[ans.func]){
+      funcMap[ans.func]();
+    }else{
+        callFunctionPrompt();
+    }
+  });
+}
+
+function callGpsPrompt(){
+  inquirer.prompt([{
+    type: 'rawlist',
+    message: chalk.bold.white('Choose an option'),
+    name: 'bpt_opt',
+    choices: [
+      "Get GPS",
+      "Send Remote GPS",
+      "Cancel"
+    ]
+  },{
+    type: 'input',
+    message: chalk.dim(" [deviceNum:]lat,long"),
+    name: 'bpt_cmd',
+    when: function(ans){
+      return ans.bpt_opt === "Send Remote GPS";
+    }
+  }]).then(function(ans){
+    if(ans.bpt_opt === "Send Remote GPS"){
+      bpt.sendCommand("bpt:gps", ans.bpt_cmd).done(reportDone, reportError);
+
+    }else if(ans.bpt_opt === "Get GPS"){
+      bpt.sendCommand("bpt:gps", "").done(reportDone, reportError);
     }
 
+    setTimeout(callFunctionPrompt, ans.bpt_opt  == "Cancel" ? 0 : choiceDelay);
   });
+}
 
+//TODO: logic to pass command data
+function callDiagPrompt(){
+  bpt.sendCommand("bpt:diag", "1").done(reportDone, reportError);
+  setTimeout(callFunctionPrompt, choiceDelay);
+}
+
+function callStatusPrompt(){
+  bpt.sendCommand("bpt:status", "").done(reportDone, reportError);
+  setTimeout(callFunctionPrompt, choiceDelay);
+}
+
+function callProbePrompt(){
+  inquirer.prompt([{
+    type: 'rawlist',
+    message: chalk.bold.white('Choose an option'),
+    name: 'bpt_opt',
+    choices: [
+      "Probe controller",
+      "Probe properties",
+      "Cancel"
+    ]
+  },{
+    type: 'rawlist',
+    message: chalk.bold.white('Select a property'),
+    name: 'bpt_prop',
+    pageSize: _.keys(bpt.APPLICATION_PROPERTIES).length,
+    choices: _.keys(bpt.APPLICATION_PROPERTIES),
+    when: function(ans){
+      return ans.bpt_opt === "Probe properties";
+    }
+  }]).then(function(ans){
+    if(ans.bpt_opt === "Probe properties"){ //TODO: NYI on the controller
+
+      console.log(chalk.yellow("Warning: Not yet implemented on the controller"));
+
+      var cmd = bpt.APPLICATION_PROPERTIES[ans.bpt_prop];
+      bpt.sendCommand("bpt:probe", cmd).done(reportDone, reportError);
+
+    }else if(ans.bpt_opt === "Probe controller"){
+      bpt.sendCommand("bpt:probe", "").done(reportDone, reportError);
+    }
+
+    setTimeout(callFunctionPrompt, ans.bpt_opt  == "Cancel" ? 0 : choiceDelay);
+  });
 }
 
 function callStatePrompt(){
@@ -72,22 +207,24 @@ function callStatePrompt(){
     message: chalk.bold.white('Choose a state'),
     name: 'bpt_state_id',
     pageSize: _.keys(bpt.STATES).length,
-    choices: _.keys(bpt.STATES),
+    choices: _.keys(bpt.STATES).filter(
+        function(v){
+          return !v.startsWith("INTERNAL");
+        }
+      ),
     when: function(ans){
       return ans.bpt_state_opt === "Set state"
     }
   }]).then(function(ans){
-    if(ans.bpt_state_opt === "Cancel"){
-      callFunctionPrompt();
-    }else if(ans.bpt_state_opt === "Get state"){
-      bpt.sendCommand("bpt:state", "").then(function(res){
-        //console.log("resp=[" + res + "]");
-      }, reportError);
+    if(ans.bpt_state_opt === "Set state"){
+      bpt.sendCommand("bpt:state", bpt.STATES[ans.bpt_state_id]).done(reportDone, reportError);
 
-    }else{
-      //TODO
+    }else if(ans.bpt_state_opt === "Get state"){
+      bpt.sendCommand("bpt:state", "").done(reportDone, reportError);
+
     }
 
+    setTimeout(callFunctionPrompt, ans.bpt_state_opt  == "Cancel" ? 0 : choiceDelay);
   });
 }
 

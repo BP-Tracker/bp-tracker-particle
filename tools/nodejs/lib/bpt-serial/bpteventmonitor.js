@@ -162,36 +162,3 @@ BPTEventMonitor.prototype = extend(EventEmitter.prototype, {
 });
 
 module.exports = BPTEventMonitor;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//process.send({ foo: " from child"});
-/*
-_onMessageReceived: function(message){
-  console.log("onMessageReceived", arguments, this);
-  process.send(message + " from child");
-process.on('message', this._onMessageReceived.bind(this));
-}
-*/
-
-//process.send({ foo: " from child"});s
