@@ -53,33 +53,29 @@ typedef enum {
 } application_event_t;
 
 
-#define NUM_CONTROLLER_STATES 14 /* NB: update this when states are added/removed */
+#define NUM_CONTROLLER_STATES 13 /* NB: update this when states are added/removed */
 
 /* the controller_state_t number that begins the internal states */
-#define INTERNAL_STATES_INDEX 8
+#define INTERNAL_STATES_INDEX 9
 
 // NB: The values need to be sequential beginning at 1
 typedef enum {
-  /* Public states */ //TODO: setup a sane order
-  STATE_SOFT_PANIC       = ((uint8_t)0x01),
-  STATE_RESET            = ((uint8_t)0x02),
-  STATE_RESET_WAIT       = ((uint8_t)0x03),
-  STATE_ACTIVATED        = ((uint8_t)0x05), // public event?
-  STATE_DEACTIVATED      = ((uint8_t)0x0B), // ??
-  STATE_ARMED            = ((uint8_t)0x07),
-
-  STATE_DISARMED         = ((uint8_t)0x08),
-
-  STATE_PAUSED           = ((uint8_t)0x0E), // for testing
-  STATE_RESUMED          = ((uint8_t)0x0F), // for testing
+  /* Public states */
+  STATE_OFFLINE          = ((uint8_t)0x01),
+  STATE_DEACTIVATED      = ((uint8_t)0x02),
+  STATE_RESET            = ((uint8_t)0x03),
+  STATE_ARMED            = ((uint8_t)0x04),
+  STATE_DISARMED         = ((uint8_t)0x05),
+  STATE_PANIC            = ((uint8_t)0x06),
+  STATE_PAUSED           = ((uint8_t)0x07), // for testing
+  STATE_RESUMED          = ((uint8_t)0x08), // for testing
 
   /* Private states - these should not be set from the cloud/client. See BPT_Controller::setState. */
-  STATE_ONLINE_WAIT      = ((uint8_t)0x06),
-  STATE_OFFLINE          = ((uint8_t)0x09),
-  STATE_PANIC            = ((uint8_t)0x0A),
-  STATE_SLEEP            = ((uint8_t)0x0D),
-
-
+  STATE_ACTIVATED        = ((uint8_t)0x09),
+  STATE_SOFT_PANIC       = ((uint8_t)0x0A),
+  STATE_ONLINE_WAIT      = ((uint8_t)0x0B),
+  STATE_RESET_WAIT       = ((uint8_t)0x0C),
+  STATE_SLEEP            = ((uint8_t)0x0D)
 } controller_state_t;
 
 typedef enum {

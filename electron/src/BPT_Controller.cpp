@@ -23,7 +23,10 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
     _geoFenceRadius(0),
     _wakeDetectionConfigured(false),
     _resumePreviousState(STATE_ACTIVATED),
-    _panicGpsPublishEventCount(0) {
+    _panicGpsPublishEventCount(0),
+    _lastRemoteCommunication(0),
+    _lastRemoteDeviceNum(0),
+    _softPanicStartTime(-1) {
 
   //TODO: initialize buffers
 }
@@ -87,6 +90,11 @@ void BPT_Controller::loop(void) { //TODO
       // reset gps module??
       // check if accel module was activated TODO
       // setState(SLEEP_STATE, true)
+      _requestGpsSent = false;
+      _panicGpsPublishEventCount = 0;
+      _softPanicStartTime = -1;
+      _wakeDetectionConfigured = false;
+
       setState(STATE_RESET_WAIT, true);
       break;
 
@@ -107,6 +115,9 @@ void BPT_Controller::loop(void) { //TODO
       {
         remote_gps_coord_t *rGps = &_remoteGpsCoord[_remoteGpsIndex];
 
+        //Serial.printf("controller: get remote GPS [date=%i] [now=%i] [lat=%f][lon=%f]\n",
+        //  rGps->datetime, now, rGps->coord.lat, rGps->coord.lon );
+
         if( (now - rGps->datetime) > GPS_COORD_MAX_AGE ){ // request GPS data
 
           if(!_requestGpsSent ){
@@ -115,8 +126,9 @@ void BPT_Controller::loop(void) { //TODO
 
           if( TIME_DELTA_SEC(_stateTime) >= REQUEST_GPS_TIMEOUT ){ // timeout
 
-            if(setState(STATE_SOFT_PANIC, true, 2)){
+            if(setState(STATE_SOFT_PANIC, true, 2)){ //TODO: send state change?
                 publish(EVENT_SOFT_PANIC, ""); // TODO: sent GPS coord, todo: ack required???
+                _requestGpsSent = false;
             }
           }
 
@@ -126,34 +138,65 @@ void BPT_Controller::loop(void) { //TODO
           gps_coord_t cGps;
           // TODO: is okay here to use the last known GPS position?
           // TODO: do something with the age of this coord
-          if( gpsModule.getGpsCoord(&cGps, true) < 0 ){ // no GPS
+          int r = gpsModule.getGpsCoord(&cGps, true);
+
+          if( r < 0 ){ // no GPS
 
               if( TIME_DELTA_SEC(_stateTime) >= GPS_ACQUISITION_TIMEOUT ){
                 if(setState(STATE_OFFLINE, true, 2)){
                   publish(EVENT_NO_GPS_SIGNAL, ""); //TODO: can we setup a HW interrupt?
+                  _requestGpsSent = false;
                 };
               }
           }
 
           float distance = gpsModule.getDistanceTo(&(rGps->coord));
 
+          Serial.printf("controller: distance to GPS coord [%f][%f] [d=%f]\n",
+            cGps.lat, cGps.lon, distance );
+
           if(distance <= _geoFenceRadius){ // in geofence
             setState(STATE_DISARMED, true);
+            _requestGpsSent = false;
 
           }else if( accelModule.isMoving() > 0 ){
             if(setState(STATE_PANIC, true, 2)){ // panic mode
+              _requestGpsSent = false;
               char temp[64];
               snprintf(temp, sizeof(temp), "%f,%f", cGps.lat, cGps.lon);
-              publish(EVENT_PANIC, temp, 1);
+              publish(EVENT_PANIC, temp); //TODO: ack required?
             }
           }else{ // disarm mode TODO: is this right?
             setState(STATE_DISARMED, true);
+            _requestGpsSent = false;
           }
         }
       }
       break; // end of actived state
     case STATE_DEACTIVATED:
-      //TODO
+
+      // clears any pending publish events and waits here indefinitely
+      // for a state change.
+
+      if(pState != STATE_DEACTIVATED){
+         // reset all pertinent state variables because the controller can
+         // jump to any of the pubic states
+         _requestGpsSent = false;
+         _panicGpsPublishEventCount = 0;
+         _softPanicStartTime = -1;
+         _wakeDetectionConfigured = false;
+
+         for(int i = 0; i < ACK_EVENT_BUFFER_SIZE; i++){
+           ack_event_t *aE =  &_ackEventBag[i];
+           aE->ackNotReceived = false; // clear slot
+         }
+         ackEventCount = 0;
+         publishEventCount = 0;
+         _publishEventFront = 0;
+
+         setState(STATE_DEACTIVATED, true, 0, false);
+      }
+
       break;
 
     case STATE_OFFLINE:
@@ -213,7 +256,22 @@ void BPT_Controller::loop(void) { //TODO
       break;
     case STATE_SOFT_PANIC:
 
-      // TODO: stay here indefinitly?
+      if(_softPanicStartTime < 0){
+        _softPanicStartTime = Time.now();
+      }
+
+      if(_lastRemoteCommunication >= _softPanicStartTime){
+
+        // stay here until we get any response from the device
+        // via bpt:probe or bpt:ack events.
+
+        setState(STATE_ACTIVATED, true); //TODO: go to STATE_RESET instead?
+      }else{
+        if(SOFT_PANIC_TO_OFFLINE_PERIOD > 0
+            && TIME_DELTA_SEC(_stateTime) >= SOFT_PANIC_TO_OFFLINE_PERIOD){
+          setState(STATE_OFFLINE, true);
+        }
+      }
 
       break;
 
@@ -224,8 +282,7 @@ void BPT_Controller::loop(void) { //TODO
           && TIME_DELTA_SEC(_stateTime) >= PANIC_GPS_PUBLISH_FREQUENCY  ){
 
         gps_coord_t pGps;
-        if( gpsModule.getGpsCoord(&pGps) >= 0 ){
-
+        if( gpsModule.getGpsCoord(&pGps) >= 0 ){ //FIXME: what about case of no GPS signal???
 
           char temp[64];
           snprintf(temp, sizeof(temp), "%f,%f", pGps.lat, pGps.lon);
@@ -235,9 +292,14 @@ void BPT_Controller::loop(void) { //TODO
               _panicGpsPublishEventCount++;
             }
         }
-      }
+      }else{
 
-      // TODO: stay here indefinitly?
+        if(PANIC_TO_OFFLINE_PERIOD > 0
+            && TIME_DELTA_SEC(_stateTime) >= PANIC_TO_OFFLINE_PERIOD){
+          setState(STATE_OFFLINE, true);
+        }
+
+      }
 
       break;
 
@@ -259,6 +321,8 @@ void BPT_Controller::loop(void) { //TODO
 
       if(pState == STATE_PAUSED){
         setState(_resumePreviousState, true, 0); // don't publish this state change
+      }else if(pState == STATE_DEACTIVATED){
+        setState(STATE_ACTIVATED, true, 0);
       }else{
         setState(pState, true, 0); // got to state without going through pasued
       }
@@ -267,16 +331,20 @@ void BPT_Controller::loop(void) { //TODO
   }
 }
 
-void BPT_Controller::_logException(const char *msg, bool reset){ //TODO
+void BPT_Controller::_logException(const char *msg){ //TODO: print to serial?
   _hasException = true;
-  strcpy(_exceptionMessage, msg);
+  strncpy(_exceptionMessage, msg, MAX_EXCEPTION_MSG_LENGTH);
 }
 
 bool BPT_Controller::hasException(){
   return _hasException;
 }
 
-const char* BPT_Controller::getException(){
+const char* BPT_Controller::getException(bool reset){
+  if(reset){
+    _hasException = false;
+    _exceptionMessage[0] = '\0';
+  }
   return _exceptionMessage;
 }
 
@@ -290,16 +358,21 @@ int BPT_Controller::getAcceleration(accel_t *t){
 
 bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
   int i = (_remoteGpsIndex + 1) % MAX_REMOTE_GPS_COORDS;
-  remote_gps_coord_t c = _remoteGpsCoord[i];
+  remote_gps_coord_t *c = &_remoteGpsCoord[i];
 
-  memset(&c, 0, sizeof(remote_gps_coord_t)); // clears the data
+  memset(c, 0, sizeof(remote_gps_coord_t)); // clears the data
 
-  c.datetime = Time.now();
-  c.coord.lat = coord->lat;
-  c.coord.lon = coord->lon;
-  c.device = deviceNumber;
+  c->datetime = Time.now();
+  c->coord.lat = coord->lat;
+  c->coord.lon = coord->lon;
+  c->device = deviceNumber;
 
   _remoteGpsIndex = i;
+  _lastRemoteCommunication = Time.now();
+  _lastRemoteDeviceNum = deviceNumber;
+
+  Serial.printf("controller: received remote GPS [lat=%f][lon=%f][date=%i]\n",
+    c->coord.lat, c->coord.lon, c->datetime);
 
   return true;
 }
@@ -307,6 +380,9 @@ bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
 
 bool BPT_Controller::receive(application_event_t e, const char *data,
   uint8_t deviceNumber){
+
+  _lastRemoteCommunication = Time.now();
+  _lastRemoteDeviceNum = deviceNumber;
 
   if(e == EVENT_PROBE_CONTROLLER){
     _probeController(deviceNumber);
@@ -406,10 +482,12 @@ controller_mode_t BPT_Controller::getMode(void){
   return cMode;
 }
 
-
+// _numOfFreeSlots and _ackRetryNumber are private arguments
+// used by the controller
+// NB: _ackRetryNumber holds the ackRequired status (default=0) when ackRequired is false
 bool BPT_Controller::publish(application_event_t event,
     const char *data, bool ackRequired,
-    uint8_t forDeviceNum, int _numOfFreeSlots){
+    uint8_t forDeviceNum, int _numOfFreeSlots, int _ackRetryNumber){
 
   if( ( ackRequired &&
          ackEventCount > (ACK_EVENT_BUFFER_SIZE - _numOfFreeSlots)
@@ -427,6 +505,7 @@ bool BPT_Controller::publish(application_event_t event,
   p->event = event;
   p->deviceNum = forDeviceNum;
   p->datetime = Time.now();
+  p->retryCount = ackRequired ? 1 : _ackRetryNumber;
   strcpy(p->data, data);
 
   // find a free slot to place ack event
@@ -444,7 +523,12 @@ bool BPT_Controller::publish(application_event_t event,
         p2->event = event;
         p2->deviceNum = forDeviceNum;
         p2->datetime = Time.now();
-        strcpy(p2->data, data);
+        p2->retryCount = 1; // ack required
+
+        if(strlen(data) > MAX_PUBLISH_DATA_LEN ){
+          _logException("Event data trucated to MAX_PUBLISH_DATA_LEN");
+        }
+        strncpy(p2->data, data, MAX_PUBLISH_DATA_LEN);
 
         t->publishCount = 1;
         t->lastPublish = Time.now();
@@ -533,7 +617,9 @@ int BPT_Controller::_processAckEvent(){ //TODO
       if( (aE->lastPublish + delaySec) <= now ){
         publish_event_t *pE = &(aE->publishEvent);
 
-        bool success = publish(pE->event, pE->data, false, pE->deviceNum);
+        bool success = publish(pE->event, pE->data, false, pE->deviceNum, 1,
+           aE->publishCount + 1);
+
         if(success){
 
           aE->publishCount = aE->publishCount + 1;
@@ -584,15 +670,17 @@ int BPT_Controller::_processPublishEvent(){
 
     /*
     Particle.publish("bpt:event",
-        String::format("%u,%s", t->event, t->data), 60, PRIVATE);
+        String::format("%u,%u,%s", t->ackRequired, t->event, t->data), 60, PRIVATE);
     */
+    //TODO: check for correctness
+    if(strlen(t->data) > 0){
+      Serial.printf("PUBLISH[bpt:event~%u,%i,%s]\n", t->event, t->retryCount, t->data);
+    }else{
+      Serial.printf("PUBLISH[bpt:event~%u,%i]\n", t->event, t->retryCount);
+    }
 
-    Serial.printf("controller: published [event=%u][deviceNum=%u][data=%s]\n",
-      t->event, t->deviceNum, t->data);
-
-    //TODO: remove later
-    //int temp = totalPublishedEvents % PUBLISH_EVENT_BUFFER_SIZE;
-    //publishTest[temp] = millis();
+    Serial.printf("controller: published [event=%u][ack=%i][deviceNum=%u][data=%s]\n",
+      t->event, t->retryCount, t->deviceNum, t->data);
 
     totalPublishedEvents++;
     published++;

@@ -54,7 +54,7 @@ bool BPT_Accel_LIS3DH::reset(void){   //TODO
     clearStatus(MOD_STATUS_INTERRUPT);
   }
 
-  return false;
+  return true;
 }
 
 void BPT_Accel_LIS3DH::init(void){

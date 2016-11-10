@@ -27,10 +27,14 @@ int temp = 0;
 
 char serialBuffer[SERIAL_COMMAND_BUFFER_SIZE];
 int serialBufferIndex = 0;
-bool serialLatch = false;
+bool serialLatch = true;
 
 BPT_Controller controller = BPT_Controller(&appCtx);
 FuelGauge fuelGauge;
+
+//NUM_CLOUD_EVENTS, CLOUD_EVENTS and CLOUD_FUNCS are declared at the bottom
+
+
 
 /*********************************************
   Functions
@@ -52,7 +56,7 @@ void loop(){
   controller.loop();
 
   if(controller.hasException()){
-    Serial.printf("app: controller exception: %s\n", controller.getException() );
+    Serial.printf("app: controller exception: %s\n", controller.getException(true) );
   }
 
   if (millis() - stateTime > 10000) {
@@ -76,36 +80,6 @@ void loop(){
 
 }
 
-
-// get or set the current state of the controller (controller_state_t type)
-// If setting the state, the return is 0 if the state was changed, -1 otherwise
-// format [deviceNum:]controller_state_t
-int stateFn(String command){
-  controller_state_t s = controller.getState();
-  Serial.printf("app: stateFn - [state=%u]", s);
-
-  //TODO
-
-  publish("bpt:state", String::format("%u", s));
-
-  return s;
-}
-
-// returns the current state of the controller including
-// gps location and battery status
-// format: "controller_mode_t,controller_state_t,batt(%),satellite,lat,lon"
-// TODO: thread safe?
-int getStatusFn(String command){
-  controller_mode_t m = controller.getMode();
-  controller_state_t s = controller.getState();
-  int r = controller.getGpsCoord(&gpsCoord);
-
-  Particle.publish("bpt:status", String::format("%u,%u,%.2f,%i,%f,%f", m, s,
-      fuelGauge.getSoC(), r, gpsCoord.lat, gpsCoord.lon), 60, PRIVATE);
-
-    return 0;
-}
-
 /*
   Returns the device number from the command (if exists) and
   sets the index to the start of the data. This function
@@ -124,6 +98,47 @@ int _getDeviceNumber(String command, int *commandStartIndex){
 
   return deviceId;
 }
+
+
+// get or set the current state of the controller (controller_state_t type)
+// If setting the state, the return 0 if the state was changed, -1 otherwise
+// format [deviceNum:]controller_state_t
+int stateFn(String command){
+  controller_state_t s = controller.getState();
+  Serial.printf("app: stateFn - [state=%u]", s);
+
+  int result = 0;
+  int commandIndex = 0;
+  _getDeviceNumber(command, &commandIndex);
+
+  if(command.length() > 0 && commandIndex >= 0){ // set state
+    int e = atoi(command.substring(commandIndex));
+    controller_state_t newState = static_cast<controller_state_t>(e);
+
+    result = controller.setState(newState) ? 0 : -1;
+  }else{ // get state
+    publish("bpt:state", String::format("%u", s));
+  }
+
+  return result;
+}
+
+// returns the current state of the controller including
+// gps location and battery status
+// format: "controller_mode_t,controller_state_t,batt(%),satellite,lat,lon"
+// TODO: thread safe?
+int getStatusFn(String command){
+  controller_mode_t m = controller.getMode();
+  controller_state_t s = controller.getState();
+  int r = controller.getGpsCoord(&gpsCoord);
+
+  publish("bpt:status", String::format("%u,%u,%.2f,%i,%f,%f", m, s,
+      fuelGauge.getSoC(), r, gpsCoord.lat, gpsCoord.lon));
+
+    return 0;
+}
+
+
 
 // pass the coordinate to the controller for processing
 int _processRemoteGpsCoord(float lat, float lon, int devNum){
@@ -173,12 +188,12 @@ int gpsCoordFn(String command){
   float lat = r < 0 ? 0 : gpsCoord.lat;
   float lon = r < 0 ? 0 : gpsCoord.lon;
 
-  Serial.printf("app: gpsCoordFn - [status=%u][lat=%f][log=%f]", r, lat, lon);
+  Serial.printf("app: gpsCoordFn - [status=%u][lat=%f][lon=%f]", r, lat, lon);
 
   if(r >= 0){
-    Particle.publish("bpt:gps", String::format("%f,%f", lat, lon), 60, PRIVATE);
+    publish("bpt:gps", String::format("%f,%f", lat, lon));
   }else{
-    Particle.publish("bpt:event", String::format("%u", EVENT_NO_GPS_SIGNAL), 60, PRIVATE);
+    publish("bpt:event", String::format("%u", EVENT_NO_GPS_SIGNAL));
   }
   return r;
 }
@@ -211,9 +226,8 @@ int getDiagnosticFn(String command){ // TODO
     status, a.x, a.y, a.z, mag, freeMem, s == true ? 1 : 0);
 
   if(publishToCloud){
-    Particle.publish("bpt:diag",
-      String::format("%u,%f,%f,%f, %i", status, a.x, a.y, a.z, mag),
-      60, PRIVATE);
+    publish("bpt:diag",
+      String::format("%u,%f,%f,%f,%i,%u", status, a.x, a.y, a.z, mag, freeMem) );
   }
 
   return 1;
@@ -233,6 +247,7 @@ int registerRemoteDeviceFn(String command){
   Probes the controller and returns a bpt:event EVENT_PROBE_CONTROLLER
   event if it can (the probe can also be triggered by sending a
   bpt:ack event). Command format: [deviceId:]
+  TODO: probe application properties?
 */
 int probeControllerFn(String command){
   int commandIndex = 0;
@@ -286,7 +301,7 @@ int testInputFn(String command){
 
   if(type == TEST_INPUT_GPS && sep > 0 ){
 
-    int dataSep = command.indexOf(",", sep);
+    int dataSep = command.indexOf(",", sep + 1);
     String latS = command.substring(sep + 1, dataSep);
     String lonS = command.substring(dataSep + 1);
 
@@ -310,8 +325,29 @@ int testInputFn(String command){
   return 1;
 }
 
-// Command format: CALL[<event name>~<command>]
 
+//NB: events maps to cloudFns variable
+int NUM_CLOUD_EVENTS = 8;
+String const CLOUD_EVENTS[] = {
+  "bpt:state",
+  "bpt:gps",
+  "bpt:status",
+  "bpt:diag",
+  "bpt:register",
+  "bpt:ack",
+  "bpt:probe",
+  "bpt:test"
+};
+int (* const CLOUD_FUNCS[])(String) = {
+  stateFn,
+  gpsCoordFn,
+  getStatusFn,
+  getDiagnosticFn,
+  registerRemoteDeviceFn,
+  ackEventFn,
+  probeControllerFn,
+  testInputFn
+};
 
 
 void _processSerialCommand(String event, String command){
@@ -319,13 +355,21 @@ void _processSerialCommand(String event, String command){
     event.c_str(), command.c_str());
 
   int r = -1;
+  bool found = false;
 
-  if(event.startsWith("bpt:state")){
-    r = stateFn(command);
+  for(int i = 0; i < NUM_CLOUD_EVENTS && !found; i++ ){
+    String e = CLOUD_EVENTS[i];
+
+    if(event.startsWith(e)){
+      r = CLOUD_FUNCS[i](command);
+      found = true;
+    }
   }
 
-  publish("bpt:event",
-    String::format("%u,%s,%i", EVENT_SERIAL_COMMAND, event.c_str(), r));
+  if(found){
+    publish("bpt:event",
+      String::format("%u,%s,%i", EVENT_SERIAL_COMMAND, event.c_str(), r));
+  }
 }
 
 /**
@@ -376,6 +420,11 @@ void setup() {
 
   controller.setup();
 
+  for(int i = 0; i < NUM_CLOUD_EVENTS; i++ ){
+    Particle.function( CLOUD_EVENTS[i], CLOUD_FUNCS[i] );
+  }
+
+  /*
   Particle.function("bpt:state", stateFn);
   Particle.function("bpt:gps", gpsCoordFn);
   Particle.function("bpt:status", getStatusFn);
@@ -384,63 +433,11 @@ void setup() {
   Particle.function("bpt:ack", ackEventFn);
   Particle.function("bpt:probe", probeControllerFn);
   Particle.function("bpt:test", testInputFn);
+  */
+
+  //FIXME: clear out any received firmware commands (ex COMMAND ATE1 E0)
+  // TODO: this doesn't rectify the problem
+  serialLatch = false;
+  //serialBuffer[0] = '\0';
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-for(int i = 0; i < PUBLISH_EVENT_BUFFER_SIZE; i++){
-  unsigned long tt = controller.publishTest[i];
-  Serial.printf("time at index %i = %u\n", i, tt);
-}
-*/
-
-/*
-if( digitalRead(WKP) == HIGH){
-  Serial.println("loop[wkp=HIGH]");
-}else{
-  Serial.println("loop[wkp=LOW]");
-}
-*/
-
-
-/*
-bool s = true;
-
-while(s && publishCount < 1){
-  s = controller.publish(EVENT_TEST, String::format("B%i", publishCount),
-  true, 2);
-  //Serial.printf("app: publish status %u\n", s == true ? 1: 0);
-
-  if(s){
-    publishCount++;
-  }else{
-    if(temp <= 0){
-      temp = publishCount;
-    }
-  }
-}
-*/

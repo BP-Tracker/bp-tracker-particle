@@ -6,6 +6,8 @@
 #ifndef _BPT_Controller_h_
 #define _BPT_Controller_h_
 
+#define MAX_PUBLISH_DATA_LEN 64 /* TODO: too small? */
+
 typedef struct {
   gps_coord_t coord;
   int datetime;       // date and time the coordinate was received
@@ -16,7 +18,8 @@ typedef struct {
   application_event_t event;
   uint8_t deviceNum; // 0 -> N/A or any device
   int datetime;
-  char data[15]; //TODO: too small?
+  char data[MAX_PUBLISH_DATA_LEN];
+  int retryCount; // contains 0 when ackRequired is false, otherwise the current resubmit attempt
 } publish_event_t;
 
 typedef struct {
@@ -26,6 +29,7 @@ typedef struct {
   bool publishFailure; // event not received after MAX_ACK_EVENT_RETRY attempts
   int lastPublish;
 } ack_event_t;
+
 
 
 /*
@@ -91,9 +95,9 @@ typedef struct {
   that has not been acknowledged by a remote device. This
   applies only for events that require an ack such as
   a state change to the PANIC state. The delay between retries
-  is specified by ACK_EVENT_RETRY_DELAY
+  is specified by ACK_EVENT_RETRY_DELAY TODO: tune later
 */
-#define MAX_ACK_EVENT_RETRY 5
+#define MAX_ACK_EVENT_RETRY 3
 
 /*
   Wait x sec before resending the unacknowledged event.
@@ -110,10 +114,10 @@ typedef struct {
 
 /*
   The amount of time to wait (in sec) for for GPS data before giving up
-  and entering STATE_SOFT_PANIC.
+  and entering STATE_SOFT_PANIC. TODO: tune later
   10 mins = 60 * 10 = 600
 */
-#define REQUEST_GPS_TIMEOUT 600
+#define REQUEST_GPS_TIMEOUT 120
 
 /*
   The amount of time to wait (in sec) for a GPS acquisition on
@@ -138,8 +142,22 @@ typedef struct {
   4 hr = 4 * 60 * 60 = 14400
   Set to 0 to disable
 */
-// #define AUTO_WAKE_AFTER_SLEEP_PERIOD 14000
-#define SLEEP_STATE_PERIOD 0
+// #define AUTO_WAKE_AFTER_SLEEP_PERIOD 14000 TODO: tune SLEEP_STATE_PERIOD
+#define SLEEP_STATE_PERIOD 30
+
+/*
+  The maximum time (in sec) the contoller will spend in the SOFT_PANIC state without
+  receiving any remote communications before going into the deep sleep
+  (OFFLINE) state. Setting to 0 disables this. Max value is ~ 49 days
+  (the max long value returned from millis) TODO: tune later
+*/
+#define SOFT_PANIC_TO_OFFLINE_PERIOD 300
+
+/*
+  Same logic as SOFT_PANIC_TO_OFFLINE_PERIOD except applying to the PANIC state
+ */
+#define PANIC_TO_OFFLINE_PERIOD 300
+
 
 /*
   The maximum time (in sec) the controller will stay paused before
@@ -151,14 +169,14 @@ typedef struct {
 
 /*
   Automatically send GPS coordinates at this frequency (in sec) in the
-  PANIC state. Set zero to disable. Use values higher than 1 sec
+  PANIC state. Set zero to disable. Use values higher than 1 sec. TODO: tune this
 */
-#define PANIC_GPS_PUBLISH_FREQUENCY 0
+#define PANIC_GPS_PUBLISH_FREQUENCY 60
 
 /*
   The max number of GPS publish events in the panic state
 */
-#define MAX_PANIC_GPS_PUBLISH_EVENTS 1
+#define MAX_PANIC_GPS_PUBLISH_EVENTS 5
 
 /*
   Wait this time (in sec) before throwing a CONTROLLER_ERROR event.
@@ -167,6 +185,12 @@ typedef struct {
   TODO: tune this parameter
 */
 #define CONTROLLER_ERROR_TIMEOUT 300
+
+/*
+  Maximum length of the exception message. Longer messages
+  are truncated to this amount
+ */
+#define MAX_EXCEPTION_MSG_LENGTH 64
 
 class BPT_Controller: public BPT {
 
@@ -200,7 +224,11 @@ class BPT_Controller: public BPT {
 
     /*
       Publishes the event to the cloud via "bpt:event" with
-      the data format [deviceNum:]application_event_t[,data1, data2, ...]
+      the format: [deviceNum:]application_event_t,ack_retry[,data1, data2, ...]
+
+      When ack_retry is non zero, the controller expects a bpt:ack reply for
+      that event. The number indicates the n'th resubmit attempt.
+      See also MAX_ACK_EVENT_RETRY.
 
       Returns true if the event was sucessfully added to the queue
       for publishing.
@@ -216,7 +244,7 @@ class BPT_Controller: public BPT {
     */
     bool publish(application_event_t event,
         const char *data, bool ackRequired = false,
-        uint8_t forDeviceNum = 0, int _numOfFreeSlots = 1);
+        uint8_t forDeviceNum = 0, int _numOfFreeSlots = 1, int _ackRetryNumber = 0);
 
 
     int getGpsCoord(gps_coord_t *c);
@@ -225,7 +253,7 @@ class BPT_Controller: public BPT {
 
     bool hasException();
 
-    const char* getException();
+    const char* getException(bool reset = false);
 
     BPT_GPS gpsModule;
     BPT_Accel accelModule;
@@ -277,9 +305,9 @@ class BPT_Controller: public BPT {
     void _checkAckQueue();
 
     // returns and logs the controller message: TODO
-    void _logException(const char *msg, bool reset = false);
+    void _logException(const char *msg);
     bool _hasException;
-    char _exceptionMessage[64];
+    char _exceptionMessage[MAX_EXCEPTION_MSG_LENGTH];
 
     // FIFO queue
     publish_event_t _publishEventQueue[PUBLISH_EVENT_BUFFER_SIZE];
@@ -292,11 +320,19 @@ class BPT_Controller: public BPT {
     bool _requestGpsSent;
 
     float _geoFenceRadius; // in meters
-    bool _wakeDetectionConfigured; // setup a movement interrupt forthe disarmed state
+    bool _wakeDetectionConfigured; // setup a movement interrupt for the disarmed state
 
     controller_state_t _resumePreviousState; // for STATE_PAUSED/STATE_RESUMED
 
     int _panicGpsPublishEventCount;
+
+    // tracks the last time a remote device communicated with the
+    // controller thougth the receive functions
+    int _lastRemoteCommunication;
+    int _lastRemoteDeviceNum;
+
+    // the time the controller entered the SOFT_PANIC state
+    int _softPanicStartTime;
 };
 
 #endif
