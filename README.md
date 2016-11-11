@@ -11,6 +11,7 @@ Provides a particle.io [cloud API][cloudapi] to monitor and receive alerts when 
 Table Of Contents
 -----------------
 
+- [Intro](#intro)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Usage](#usage)
@@ -19,12 +20,16 @@ Table Of Contents
 - [Additional Resources](#additional-resources)
 - [License](#license)
 
+Intro
+-------
+
+TODO
 
 Features
 -------
   * Automatic device arming and disarming
   * State change notifications and `PANIC` settings
-  * Persist configuration settings (_in progress_)
+  * Persistent configuration settings (_in progress_)
   * GPS polling and low-battery functions
   * Support for multiple remote clients
   * Serial monitoring and testing
