@@ -4,7 +4,7 @@
     @author   Derek Benda
     @license  MIT (see Licence.txt)
 
-    v1.0  - First release
+    v0.5  - First release
 */
 /**************************************************************************/
 
@@ -22,11 +22,12 @@
   These can be updated through the bpt:register" cloud function.
 */
 typedef enum {
-  PROP__RESERVED        = (0), /* do not use */
-  PROP_CONTROLLER_MODE  = (1), /* */
-  PROP_GEOFENCE_RADIUS = (2), /* */
-  PROP_ACCEL_THRESHOLD  = (3),  /* */
-  PROP_ACK_ENABLED      = (4) /* set false to disable ack */
+  PROP__RESERVED            = (0), /* do not use */
+  PROP_CONTROLLER_MODE      = (1), /* */
+  PROP_GEOFENCE_RADIUS      = (2), /* */
+  PROP_ACCEL_THRESHOLD      = (3), /* */
+  PROP_ACK_ENABLED          = (4), /* set false to disable ack */
+  PROP_SLEEP_WAKEUP_STANDBY = (5), /* used when device is permitted to go into sleep. */
 } application_property_t;
 
 /* test data types for the controller in the CONTROLLER_MODE_TEST mode */
@@ -42,7 +43,7 @@ typedef enum {
   EVENT_STATE_CHANGE       = ((uint8_t)0x01), /* controller changed state */
   EVENT_REQUEST_GPS        = ((uint8_t)0x02), /* TODO: can this ack also come from a bpt:gps event */
   EVENT_BATTERY_LOW 	     = ((uint8_t)0x03), /* requires ACK event */
-  EVENT_NO_GPS_SIGNAL      = ((uint8_t)0x04),
+  EVENT_NO_GPS_SIGNAL      = ((uint8_t)0x04), /* data includes the age of the last known coord */
   EVENT_SOFT_PANIC         = ((uint8_t)0x05), /* not enough data to determine panic state */
   EVENT_PANIC              = ((uint8_t)0x06), /* requires ACK event */
   EVENT_PROBE_CONTROLLER   = ((uint8_t)0x07), /* this is a special event a remote device can send to probe the controller */

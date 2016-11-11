@@ -43,9 +43,28 @@ float BPT_Accel::getMagnitude(accel_t *accel){
     + (accel->z * accel->z));
 }
 
-// TODO: use a rolling window here
+// TODO: maybe use GPS intead for this?
 int BPT_Accel::isMoving(){
-  return 1; //TODO
+
+  // TODO: use rolling window
+
+  //FIXME: for now just get a rough idea using the magnitude alone
+  const int samples = 10;
+  const float base_mag = 0.98;
+  const float epsilion = 0.15;
+
+  accel_t a;
+  float m;
+  for(int i = 0; i < samples; i++){
+    getAcceleration(&a);
+    m = getMagnitude(&a);
+
+    if(m > base_mag + epsilion || m < base_mag - epsilion ){
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 int BPT_Accel::getAcceleration(accel_t *accel){
@@ -53,6 +72,11 @@ int BPT_Accel::getAcceleration(accel_t *accel){
 }
 
 bool BPT_Accel::hasMoved(bool rst){
+
+  if(_hasTestData && applicationCtx->mode == CONTROLLER_MODE_TEST){
+    return _wakeMode;
+  }
+
   bool s = _deviceImpl.getStatus( MOD_STATUS_INTERRUPT );
 
   if(rst && s){

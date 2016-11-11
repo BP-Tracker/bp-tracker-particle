@@ -72,6 +72,11 @@ void BPT_GPS::setStatusMsg(const char *msg){
   return _deviceImpl.setStatusMsg(msg);
 }
 
+// return -1 if not enough data is available
+int BPT_GPS::isMoving(){ //TODO
+  return -1;
+}
+
 int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord, bool useLastKnown){
   //TODO: return useLastKnown if data not available
 
@@ -91,7 +96,7 @@ int BPT_GPS::getGpsCoord(gps_coord_t *gpsCoord, bool useLastKnown){
 // the controller mode is CONTROLLER_MODE_TEST
 void BPT_GPS::setTestData(const gps_coord_t *gpsCoord, bool reset, int age){
   _hasTestData = !reset;
-  _testGpsCoordAge = age; // negative means no vaild data
+  _testGpsCoordAge = age; // negative means data not valid, 0 = always valid
   _testCoord.lat = gpsCoord->lat;
   _testCoord.lon = gpsCoord->lon;
 }

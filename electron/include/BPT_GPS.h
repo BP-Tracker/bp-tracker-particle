@@ -53,6 +53,9 @@ class BPT_GPS: public BPT_Module {
 
     void setStatusMsg(const char *msg);
 
+    // returns the rate the device is moving:
+    // -1 if no data available, 0 if not moving at all
+    int isMoving(); // TODO
 
     // returns true ( 0 or greater) if module has a GPS fix and coords have been updated
     // enable lastKnownPosition to get the last known coordinate if no
@@ -82,8 +85,6 @@ class BPT_GPS: public BPT_Module {
     bool _hasTestData;
     gps_coord_t _testCoord;
     int _testGpsCoordAge;
-
-
 };
 
 #endif

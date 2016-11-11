@@ -218,16 +218,18 @@ int getDiagnosticFn(String command){ // TODO
   uint16_t status = controller.accelModule.mod_status.status;
   bool s = controller.accelModule.getStatus(MOD_STATUS_INTERRUPT);
   controller.accelModule.getAcceleration(&a);
-  int mag = controller.accelModule.getMagnitude(&a);
+  float mag = controller.accelModule.getMagnitude(&a);
+  int isMoving = controller.accelModule.isMoving();
 
   Serial.print("app: getDiagnosticFn - ");
   Serial.printf(
-    "[status=%u][x=%f][y=%f][z=%f][m=%i][mem=%i][it=%i]\n",
-    status, a.x, a.y, a.z, mag, freeMem, s == true ? 1 : 0);
+    "[status=%u][x=%f][y=%f][z=%f][mag=%f][mov=%i][mem=%i][it=%i]\n",
+    status, a.x, a.y, a.z, mag, isMoving, freeMem, s == true ? 1 : 0);
 
   if(publishToCloud){
     publish("bpt:diag",
-      String::format("%u,%f,%f,%f,%i,%u", status, a.x, a.y, a.z, mag, freeMem) );
+      String::format("%u,%f,%f,%f,%f,%i,%u",
+        status, a.x, a.y, a.z, mag, isMoving, freeMem) );
   }
 
   return 1;
@@ -240,6 +242,26 @@ int getDiagnosticFn(String command){ // TODO
 int registerRemoteDeviceFn(String command){
   //TODO
   return -1;
+}
+
+/*
+  Resets the controller to the initial state
+  Format: [<reset_properties>][,<hard_reset>]
+  Default is 0,0 if no data is passed in
+ */
+int resetFn(String command){
+  int sep = command.indexOf(',');
+
+  if(sep > 0){
+    controller.reset(
+      atoi(command.substring(0, sep)), atoi(command.substring(sep + 1)) );
+  }else if( command.length() > 0){
+    controller.reset( atoi(command) );
+  }else{
+    controller.reset();
+  }
+
+  return 0;
 }
 
 
@@ -299,7 +321,7 @@ int testInputFn(String command){
   String typeStr = command.substring(0, sep);
   test_input_t type = static_cast<test_input_t>(atoi(typeStr));
 
-  if(type == TEST_INPUT_GPS && sep > 0 ){
+  if(type == TEST_INPUT_GPS && sep > 0 ){ //lat,lon[,reset][,age]
 
     int dataSep = command.indexOf(",", sep + 1);
     String latS = command.substring(sep + 1, dataSep);
@@ -336,7 +358,8 @@ String const CLOUD_EVENTS[] = {
   "bpt:register",
   "bpt:ack",
   "bpt:probe",
-  "bpt:test"
+  "bpt:test",
+  "bpt:reset"
 };
 int (* const CLOUD_FUNCS[])(String) = {
   stateFn,
@@ -346,7 +369,8 @@ int (* const CLOUD_FUNCS[])(String) = {
   registerRemoteDeviceFn,
   ackEventFn,
   probeControllerFn,
-  testInputFn
+  testInputFn,
+  resetFn
 };
 
 
@@ -413,7 +437,7 @@ void serialEvent(){
 
 //override
 void setup() {
-  Serial.begin(9600); // opens up a Serial port
+  Serial.begin(9600);
 
   pinMode(ON_BOARD_LED, OUTPUT);
   appCtx.devices = devices;
@@ -424,20 +448,7 @@ void setup() {
     Particle.function( CLOUD_EVENTS[i], CLOUD_FUNCS[i] );
   }
 
-  /*
-  Particle.function("bpt:state", stateFn);
-  Particle.function("bpt:gps", gpsCoordFn);
-  Particle.function("bpt:status", getStatusFn);
-  Particle.function("bpt:diag", getDiagnosticFn);
-  Particle.function("bpt:register", registerRemoteDeviceFn);
-  Particle.function("bpt:ack", ackEventFn);
-  Particle.function("bpt:probe", probeControllerFn);
-  Particle.function("bpt:test", testInputFn);
-  */
-
   //FIXME: clear out any received firmware commands (ex COMMAND ATE1 E0)
   // TODO: this doesn't rectify the problem
   serialLatch = false;
-  //serialBuffer[0] = '\0';
-
 }

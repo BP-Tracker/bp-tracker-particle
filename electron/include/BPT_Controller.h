@@ -11,7 +11,7 @@
 typedef struct {
   gps_coord_t coord;
   int datetime;       // date and time the coordinate was received
-  uint8_t device; 		// remote device number
+  uint8_t device;     // remote device number
 } remote_gps_coord_t;
 
 typedef struct {
@@ -19,7 +19,7 @@ typedef struct {
   uint8_t deviceNum; // 0 -> N/A or any device
   int datetime;
   char data[MAX_PUBLISH_DATA_LEN];
-  int retryCount; // contains 0 when ackRequired is false, otherwise the current resubmit attempt
+  int retryCount;   // is 0 when ackRequired is false, otherwise the current resubmit attempt
 } publish_event_t;
 
 typedef struct {
@@ -58,6 +58,7 @@ typedef struct {
 /*
   How often to execute the controller's main logic in ms
   when it's awake. Gauge this for power utilization TODO: fine tune this
+  TODO: will this be used in the future?
 */
 #define CONTROLLER_RUN_FREQUENCY 1000
 
@@ -110,7 +111,7 @@ typedef struct {
 /*
   The time in ms to wait in the RESET_WAIT_STATE into ONLINE_STATE
 */
-#define RESET_WAIT_STATE_DELAY 5000
+#define RESET_WAIT_STATE_DELAY 15000
 
 /*
   The amount of time to wait (in sec) for for GPS data before giving up
@@ -138,12 +139,19 @@ typedef struct {
 
 /*
   Enables the sleep state and the controller automatically wakes up
-  after this time (in sec) has elsaped without any movement detection
+  after this time (in sec) has elapsed without any movement detection
+  or the GPS couldn't aquire a signal after GPS_ACQUISITION_TIMEOUT time
   4 hr = 4 * 60 * 60 = 14400
   Set to 0 to disable
 */
 // #define AUTO_WAKE_AFTER_SLEEP_PERIOD 14000 TODO: tune SLEEP_STATE_PERIOD
 #define SLEEP_STATE_PERIOD 30
+
+/*
+  The offline state deep sleep time (in sec). The controller goes into
+  a very low power state and can only wake up from the RTC alarm. TODO: tune later
+ */
+#define OFFLINE_STATE_PERIOD 60
 
 /*
   The maximum time (in sec) the contoller will spend in the SOFT_PANIC state without
@@ -192,6 +200,15 @@ typedef struct {
  */
 #define MAX_EXCEPTION_MSG_LENGTH 64
 
+/*
+  The default minium time (in sec) the controller will stay awake/online after
+  sleeping before going back if it wasn't interrupted by a hardware event.
+  This permits remote communication during quiet situations.
+  See also SLEEP_STATE_PERIOD and PROP_SLEEP_WAKEUP_STANDBY property.
+  5 mins = 5 * 60 = 300 TODO: tune later
+ */
+#define DEFAULT_SLEEP_WAKEUP_IDLE_STANDBY 120
+
 class BPT_Controller: public BPT {
 
   public:
@@ -200,7 +217,7 @@ class BPT_Controller: public BPT {
 
     void setup();
 
-    void reset(void);
+    void reset(bool props = false, bool softReset = false);
 
     bool setMode(controller_mode_t m);
     controller_mode_t getMode();
@@ -239,8 +256,8 @@ class BPT_Controller: public BPT {
       at least one (maybe two?) free slots in a loop cycle. That way
       _publishEvent will always succeed.
 
-      Set forDeviceNum when the event is indended for a specific device.
-      usually used with ackRequired.
+      Set forDeviceNum when the event is indended for a specific device
+      (usually used with ackRequired).
     */
     bool publish(application_event_t event,
         const char *data, bool ackRequired = false,
@@ -304,6 +321,9 @@ class BPT_Controller: public BPT {
     void _checkPublishQueue();
     void _checkAckQueue();
 
+    // uses GPS and accelerometer as fallback
+    int _isMoving();
+
     // returns and logs the controller message: TODO
     void _logException(const char *msg);
     bool _hasException;
@@ -333,6 +353,9 @@ class BPT_Controller: public BPT {
 
     // the time the controller entered the SOFT_PANIC state
     int _softPanicStartTime;
+
+    // the minimum time to stay awake see PROP_SLEEP_WAKEUP_STANDBY
+    int _sleepWakeupStandy;
 };
 
 #endif

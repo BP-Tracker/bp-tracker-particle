@@ -26,7 +26,8 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
     _panicGpsPublishEventCount(0),
     _lastRemoteCommunication(0),
     _lastRemoteDeviceNum(0),
-    _softPanicStartTime(-1) {
+    _softPanicStartTime(-1),
+    _sleepWakeupStandy(0) {
 
   //TODO: initialize buffers
 }
@@ -37,9 +38,11 @@ void BPT_Controller::setup(void) {
   registerProperty(PROP_CONTROLLER_MODE, this);
   registerProperty(PROP_ACK_ENABLED, this);
   registerProperty(PROP_GEOFENCE_RADIUS, this);
+  registerProperty(PROP_SLEEP_WAKEUP_STANDBY, this);
 
   _ackEventsEnabled = getProperty(PROP_ACK_ENABLED, true);
   _geoFenceRadius = getProperty(PROP_GEOFENCE_RADIUS, DEFAULT_GEOFENCE_RADIUS);
+  _sleepWakeupStandy = getProperty(PROP_SLEEP_WAKEUP_STANDBY, DEFAULT_SLEEP_WAKEUP_IDLE_STANDBY );
   cMode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_TEST); //TODO: change later
   cState = STATE_ONLINE_WAIT;
 
@@ -134,7 +137,6 @@ void BPT_Controller::loop(void) { //TODO
 
         }else{ // check the device is within a geofence
 
-          //TODO
           gps_coord_t cGps;
           // TODO: is okay here to use the last known GPS position?
           // TODO: do something with the age of this coord
@@ -143,32 +145,40 @@ void BPT_Controller::loop(void) { //TODO
           if( r < 0 ){ // no GPS
 
               if( TIME_DELTA_SEC(_stateTime) >= GPS_ACQUISITION_TIMEOUT ){
-                if(setState(STATE_OFFLINE, true, 2)){
-                  publish(EVENT_NO_GPS_SIGNAL, ""); //TODO: can we setup a HW interrupt?
-                  _requestGpsSent = false;
-                };
+                if(SLEEP_STATE_PERIOD > 0){
+
+                  // NB: After sleep, the controller will go into the armed state
+                  // without any GPS information
+
+                  if(setState(STATE_SLEEP, true, 2)){
+                    char t[64];
+                    snprintf(t, sizeof(t), "%i", r);
+
+                    publish(EVENT_NO_GPS_SIGNAL, t); //TODO: can we setup an interrupt on the GPS?
+                    _requestGpsSent = false;
+                  };
+                }
               }
-          }
+          }else{
 
-          float distance = gpsModule.getDistanceTo(&(rGps->coord));
+            float distance = gpsModule.getDistanceTo(&(rGps->coord));
 
-          Serial.printf("controller: distance to GPS coord [%f][%f] [d=%f]\n",
-            cGps.lat, cGps.lon, distance );
+            Serial.printf("controller: get distance to device coord [%f][%f] [d=%f]\n",
+              cGps.lat, cGps.lon, distance );
 
-          if(distance <= _geoFenceRadius){ // in geofence
-            setState(STATE_DISARMED, true);
-            _requestGpsSent = false;
-
-          }else if( accelModule.isMoving() > 0 ){
-            if(setState(STATE_PANIC, true, 2)){ // panic mode
+            if(distance <= _geoFenceRadius){ // in geofence
+              setState(STATE_DISARMED, true);
               _requestGpsSent = false;
-              char temp[64];
-              snprintf(temp, sizeof(temp), "%f,%f", cGps.lat, cGps.lon);
-              publish(EVENT_PANIC, temp); //TODO: ack required?
+
+            }else{
+
+              if(setState(STATE_PANIC, true, 2)){
+                char temp[64];
+                snprintf(temp, sizeof(temp), "%i,%f,%f", _isMoving(), cGps.lat, cGps.lon);
+                publish(EVENT_PANIC, temp);
+              }
             }
-          }else{ // disarm mode TODO: is this right?
-            setState(STATE_DISARMED, true);
-            _requestGpsSent = false;
+
           }
         }
       }
@@ -199,8 +209,14 @@ void BPT_Controller::loop(void) { //TODO
 
       break;
 
-    case STATE_OFFLINE:
-      // TODO
+    case STATE_OFFLINE: // go into deep sleep
+
+      if( publishEventCount == 0){
+        // wait at least until the current queue clears, ignoring ack events
+        System.sleep(SLEEP_MODE_DEEP, OFFLINE_STATE_PERIOD);
+        // controller software reset
+      }
+
       break;
     case STATE_DISARMED:
 
@@ -222,14 +238,14 @@ void BPT_Controller::loop(void) { //TODO
         }
       }
 
-
       break; // end STATE_DISARMED
     case STATE_ARMED:
 
       if( accelModule.hasMoved() ){
         setState(STATE_ACTIVATED, true, 0);
       }else{
-        if( SLEEP_STATE_PERIOD > 0 ){
+        if( SLEEP_STATE_PERIOD > 0
+            && TIME_DELTA_SEC(_stateTime) >= _sleepWakeupStandy ){
             setState(STATE_SLEEP, true);
         }
       }
@@ -250,11 +266,15 @@ void BPT_Controller::loop(void) { //TODO
         // This delay should not be necessary, but sometimes things don't seem to work right
         // immediately coming out of sleep.
     		delay(500);
+
       }
 
       setState(STATE_ARMED, true, 0); // don't publish this transition
       break;
     case STATE_SOFT_PANIC:
+
+      // stay here for a while and wait for any response from the device
+      // via bpt:probe or bpt:ack events.
 
       if(_softPanicStartTime < 0){
         _softPanicStartTime = Time.now();
@@ -262,10 +282,12 @@ void BPT_Controller::loop(void) { //TODO
 
       if(_lastRemoteCommunication >= _softPanicStartTime){
 
-        // stay here until we get any response from the device
-        // via bpt:probe or bpt:ack events.
+        //Serial.printf("controller: soft_panic [last=%i][start=%i]\n",
+          //_lastRemoteCommunication, _softPanicStartTime);
 
         setState(STATE_ACTIVATED, true); //TODO: go to STATE_RESET instead?
+        _softPanicStartTime = -1;
+
       }else{
         if(SOFT_PANIC_TO_OFFLINE_PERIOD > 0
             && TIME_DELTA_SEC(_stateTime) >= SOFT_PANIC_TO_OFFLINE_PERIOD){
@@ -285,7 +307,7 @@ void BPT_Controller::loop(void) { //TODO
         if( gpsModule.getGpsCoord(&pGps) >= 0 ){ //FIXME: what about case of no GPS signal???
 
           char temp[64];
-          snprintf(temp, sizeof(temp), "%f,%f", pGps.lat, pGps.lon);
+          snprintf(temp, sizeof(temp), "%i,%f,%f", _isMoving(), pGps.lat, pGps.lon);
 
             if(publish(EVENT_PANIC, temp)){
               _resetTime(&_stateTime);
@@ -329,6 +351,22 @@ void BPT_Controller::loop(void) { //TODO
 
       break;
   }
+}
+
+/**
+ * Returns whether or not the device is currently in transit. It uses the
+ * GPS module and the accelerometer as a fallback.
+ *
+ * @return Returns 1 if moving, 0 not moving, or -1 nondeterminite
+ */
+int BPT_Controller::_isMoving(){
+  int r = gpsModule.isMoving();
+
+  if(r < 0){
+    return accelModule.isMoving();
+  }
+
+  return r;
 }
 
 void BPT_Controller::_logException(const char *msg){ //TODO: print to serial?
@@ -431,7 +469,13 @@ bool BPT_Controller::receive(application_event_t e, const char *data,
 }
 
 
-void BPT_Controller::reset(void) { //TODO: complete
+/**
+ * Resets the controller to an initial state
+ * @param props In addition, reset all configurable properties to their defaults
+ * @param softReset In addition, issue a software reset
+ */
+void BPT_Controller::reset(bool props, bool softReset) { //TODO: complete
+
 }
 
 /*
@@ -441,7 +485,7 @@ void BPT_Controller::reset(void) { //TODO: complete
     when _reserveSlots > 0
   _resetTime resets _stateTime
 
-  returns false when a state change did not happen (not enough free slots) TODO
+  returns false when a state change did not happen (not enough free slots)
 */
 bool BPT_Controller::setState(controller_state_t s, bool _force,
   int _reserveSlots, bool _resetStateTime){
@@ -451,13 +495,23 @@ bool BPT_Controller::setState(controller_state_t s, bool _force,
     return false;
   }
 
-  //TODO
-  /*
   if(!_force && s >= INTERNAL_STATES_INDEX){
-    Serial.printf("controller: warning - cannot set internal state %i\n", s);
+    _logException("setting an internal state is not permitted");
     return false;
   }
-  */
+
+  if( (ackEventCount + _reserveSlots) > ACK_EVENT_BUFFER_SIZE
+      || (publishEventCount + _reserveSlots) > PUBLISH_EVENT_BUFFER_SIZE ){
+
+    return false; // buffer full
+  }
+
+  if(_reserveSlots > 0 && s < INTERNAL_STATES_INDEX){
+
+    char t[16];
+    snprintf(t, sizeof(t), "%i,%i", cState, s);
+    publish(EVENT_STATE_CHANGE, t);
+  }
 
   pState = cState;
   cState = s;
