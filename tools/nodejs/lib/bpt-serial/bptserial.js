@@ -37,7 +37,8 @@ var BPTSerial = function (options, bptEventCallback) {
       captureAllData: false, //TODO: implement
       coreType: 'unknown',
       timeout: 5000,
-      monitor: true
+      monitor: true,
+      // onMonitorConnected: callback when the monitor has started args: this
   };
 	this.options = extend(this.defaults, options);
   this.btpEventCallback = bptEventCallback || function(){};
@@ -110,6 +111,10 @@ BPTSerial.prototype = extend(BPT.prototype, {
 
   _onMonitorStart: function(monitor){
     //console.log("_onMonitorStart");
+    if(this.options.onMonitorConnected){
+      var fn = this.options.onMonitorConnected;
+      fn.call(this);
+    }
   },
 
   _onMonitorStop: function(monitor){

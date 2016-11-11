@@ -48,14 +48,30 @@ function formatEvent(event, data){
   if(event == "bpt:event"){
     var tokens = data.split(',');
     var eventType = tokens.shift();
+    var ackRequired = tokens.shift();
     var events = _.invert(BPTSerial.prototype.EVENTS);
+    var states = _.invert(BPTSerial.prototype.STATES);
+    var d;
 
     if(events[eventType]){
-      return events[eventType] + ' ' + tokens.join(',');
+      d = events[eventType];
+      var ar = ackRequired >= 1 ? (' ' + ackRequired + ' ') : ' '; // don't display false ack flag
+      d += ar;
+
+      if( eventType == BPTSerial.prototype.EVENTS.EVENT_STATE_CHANGE ){
+        var fromState = tokens.shift();
+        var toState = tokens.shift();
+
+        d += states[fromState] ? ( states[fromState] ) : (fromState);
+        d += '->';
+        d += states[toState] ? ( states[toState] ) : (toState);
+      }
+
+      return d + tokens.join(',');
     }
+
   }else if(event == "bpt:state"){
     var states = _.invert(BPTSerial.prototype.STATES);
-
     if(states[data]){
       return states[data];
     }

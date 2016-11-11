@@ -1,12 +1,10 @@
 'use strict'
 
-var BPT = function (){
-};
+var BPT = function (){ };
 
 BPT.prototype = {
 
   /* controller states */
-  // TODO: update values
   STATES: {
     STATE_OFFLINE              : 0x01,
     STATE_DEACTIVATED          : 0x02,
@@ -34,12 +32,12 @@ BPT.prototype = {
 
  /* application_property_t types */
   APPLICATION_PROPERTIES: {
-    PROP_CONTROLLER_MODE : 1,
-    PROP_GEOFENCE_RADIUS : 2,
-    PROP_ACCEL_THRESHOLD : 3,
-    PROP_ACK_ENABLED     : 4
+    PROP_CONTROLLER_MODE      : 1,
+    PROP_GEOFENCE_RADIUS      : 2,
+    PROP_ACCEL_THRESHOLD      : 3,
+    PROP_ACK_ENABLED          : 4,
+    PROP_SLEEP_WAKEUP_STANDBY : 5
   },
-
 
   /* application_event_t events */
   EVENTS: {

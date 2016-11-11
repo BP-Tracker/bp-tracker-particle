@@ -14,15 +14,16 @@ var bpt = new BPTSerial({ baud: 9600, monitor: false });
 var choiceDelay = 500;
 
 var mainChoices = [
-  'Show options again',
   'bpt:ack',
-  'bpt:status',
   'bpt:state',
-  'bpt:gps',
-  'bpt:diag',
-  'bpt:register',
   'bpt:probe',
-  'bpt:test'
+  'bpt:gps',
+  'bpt:status',
+  'bpt:register',
+  'bpt:diag',
+  'bpt:test',
+  'bpt:reset',
+  'Show options again',
 ];
 
 var funcMap = {
@@ -34,8 +35,28 @@ var funcMap = {
   'bpt:diag'           : callDiagPrompt,
   'bpt:register'       : callRegisterPrompt,
   'bpt:probe'          : callProbePrompt,
-  'bpt:test'           : callTestPrompt
+  'bpt:test'           : callTestPrompt,
+  'bpt:reset'          : callResetPrompt
 };
+
+/**
+ * Send any initial commands to the devices (optional)
+ */
+function runSetupCommands(){
+  var d = function(){ };
+  var e = function(error){
+    console.log("Initial setup error: ", error)
+  }
+
+  //TODO: are the commands sent too fast?
+  bpt.sendCommand("bpt:status", "" ).then(function(){
+    return bpt.sendCommand("bpt:diag", "1" ).then(
+      function(){
+        return bpt.sendCommand("bpt:state", "" ).done(d, e);
+      }, e
+    );
+  }, e);
+}
 
 function reportError(error){
   console.log(chalk.bold.red("! ") + "error " + error);
@@ -47,6 +68,25 @@ function reportDone(command){
 
 function callRegisterPrompt(){ //TODO
   callFunctionPrompt();
+}
+
+function callResetPrompt(){
+  inquirer.prompt([{
+    type: 'rawlist',
+    message: chalk.bold.white('Are you sure you want to reset?'),
+    name: 'bpt_opt',
+    choices: [
+      'Yes',
+      'No',
+      'Cancel'
+    ],
+    default: 2
+  }]).then(function(ans){
+      if(ans.bpt_opt == 'Yes'){
+        bpt.sendCommand("bpt:reset", "" ).done(reportDone, reportError);
+      }
+      setTimeout(callFunctionPrompt, ans.bpt_opt  == "Yes" ? choiceDelay : 0);
+  });
 }
 
 function callAckPrompt() {
@@ -104,10 +144,10 @@ function callFunctionPrompt(){
   		message: chalk.bold.white('Select a function to call'),
   		choices: mainChoices,
       pageSize: mainChoices.length,
-      default: 0
+      default: 9
   	}
   ]).then(function(ans) {
-    console.log('ans', ans);
+    //console.log('ans', ans);
 
     if(funcMap[ans.func]){
       funcMap[ans.func]();
@@ -228,4 +268,5 @@ function callStatePrompt(){
   });
 }
 
+runSetupCommands();
 callFunctionPrompt();
