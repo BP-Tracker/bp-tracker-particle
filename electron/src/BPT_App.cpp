@@ -46,7 +46,7 @@ FuelGauge fuelGauge;
  * @param data  The data
  */
 void publish(String name, const char *data){
-  //Particle.publish(name, data, 60, PRIVATE); //TODO
+  Particle.publish(name, data, 60, PRIVATE); //TODO
   Serial.printf("PUBLISH[%s~%s]\n", name.c_str(), data);
 }
 
@@ -123,17 +123,36 @@ int stateFn(String command){
   return result;
 }
 
-// returns the current state of the controller including
-// gps location and battery status
-// format: "controller_mode_t,controller_state_t,batt(%),satellite,lat,lon"
-// TODO: thread safe?
+// returns the current state of the controller including gps location and
+// battery status
+// output format: "EVENT_STATUS_UPDATE,0,controller_mode_t,controller_state_t,
+//          batt(%),signal_strength(%),is_armed,[satellite,lat,lon]"
+// Arguments: [deviceNum:][<include_gps_info>]  (default is 0)
 int getStatusFn(String command){
   controller_mode_t m = controller.getMode();
   controller_state_t s = controller.getState();
   int r = controller.getGpsCoord(&gpsCoord);
 
-  publish("bpt:status", String::format("%u,%u,%.2f,%i,%f,%f", m, s,
-      fuelGauge.getSoC(), r, gpsCoord.lat, gpsCoord.lon));
+  int includeGpsData = 0;
+  int commandIndex = 0;
+  _getDeviceNumber(command, &commandIndex);
+
+  if(command.length() > 0 && commandIndex >= 0){
+    includeGpsData = atoi(command.substring(commandIndex));
+  }
+
+  float signalStr = 80; //TODO
+  int isArmed = controller.isArmed() ? 1 : 0;
+
+  if(includeGpsData){
+    publish("bpt:event", String::format("%u,0,%u,%u,%.2f,%.2f,%i,%i,%f,%f",
+          EVENT_STATUS_UPDATE, m, s, fuelGauge.getSoC(), signalStr, isArmed,
+          r,gpsCoord.lat, gpsCoord.lon));
+
+  }else{
+    publish("bpt:event", String::format("%u,0,%u,%u,%.2f,%.2f, %i",
+          EVENT_STATUS_UPDATE, m, s, fuelGauge.getSoC(), signalStr, isArmed));
+  }
 
     return 0;
 }
@@ -236,10 +255,22 @@ int getDiagnosticFn(String command){ // TODO
 }
 
 /*
-  Registers a remote device as a candidate to respond to this controller.
-  This is optional when only one remote device will be used.
+  Registers device or application properties
+  Command syntax:
+    0                                 // get all properties
+    1,application_property_t          // get specific property
+    2,application_property_t,[data]   // set property
+
+  Results are returned in a btp:register event
+  Output structure:
+    0 -> application_property_t,value[,application_property_t,value][,...]
+    1 -> application_property_t,value
+    2 -> no event created, TODO: change this?
+
+  Returns 0 on success or -1 if an error occured or property value is invalid
+
 */
-int registerRemoteDeviceFn(String command){
+int registerFn(String command){
   //TODO
   return -1;
 }
@@ -249,7 +280,7 @@ int registerRemoteDeviceFn(String command){
   Format: [<reset_properties>][,<hard_reset>]
   Default is 0,0 if no data is passed in
  */
-int resetFn(String command){
+int resetFn(String command){ //TODO
   int sep = command.indexOf(',');
 
   if(sep > 0){
@@ -349,7 +380,7 @@ int testInputFn(String command){
 
 
 //NB: events maps to cloudFns variable
-int NUM_CLOUD_EVENTS = 8;
+int NUM_CLOUD_EVENTS = 9;
 String const CLOUD_EVENTS[] = {
   "bpt:state",
   "bpt:gps",
@@ -366,7 +397,7 @@ int (* const CLOUD_FUNCS[])(String) = {
   gpsCoordFn,
   getStatusFn,
   getDiagnosticFn,
-  registerRemoteDeviceFn,
+  registerFn,
   ackEventFn,
   probeControllerFn,
   testInputFn,
@@ -392,7 +423,7 @@ void _processSerialCommand(String event, String command){
 
   if(found){
     publish("bpt:event",
-      String::format("%u,%s,%i", EVENT_SERIAL_COMMAND, event.c_str(), r));
+      String::format("%u,0,%s,%i", EVENT_SERIAL_COMMAND, event.c_str(), r));
   }
 }
 

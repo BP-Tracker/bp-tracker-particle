@@ -17,6 +17,8 @@
 
 // Global defines go here
 
+/** update this when new properties are added */
+#define NUM_APPLICATION_PROPERTIES 6
 /*
   NB: Do not change the order (value is a index into an array)
   These can be updated through the bpt:register" cloud function.
@@ -27,18 +29,20 @@ typedef enum {
   PROP_GEOFENCE_RADIUS      = (2), /* */
   PROP_ACCEL_THRESHOLD      = (3), /* */
   PROP_ACK_ENABLED          = (4), /* set false to disable ack */
-  PROP_SLEEP_WAKEUP_STANDBY = (5), /* used when device is permitted to go into sleep. */
+  PROP_SLEEP_WAKEUP_STANDBY = (5) /* used when device is permitted to go into sleep. */
 } application_property_t;
+
 
 /* test data types for the controller in the CONTROLLER_MODE_TEST mode */
 typedef enum {
   TEST_INPUT_GPS        = (1), /* sets the GPS coordinate of device. format: lat,lon */
   TEST_INPUT_AUTO_GPS   = (2), /* TODO: like TEST_INPUT_GPS expect the coordinate is arbitrarily chosen */
-  TEST_INPUT_ACCEL_INT  = (2)  /* TODO: triggers a 'wake' event on the accelerometer */
+  TEST_INPUT_ACCEL_INT  = (3)  /* TODO: triggers a 'wake' event on the accelerometer */
 } test_input_t;
 
 
 // bpt:event event codes
+// when adding or modifying events also update the libraries in tools/nodejs
 typedef enum {
   EVENT_STATE_CHANGE       = ((uint8_t)0x01), /* controller changed state */
   EVENT_REQUEST_GPS        = ((uint8_t)0x02), /* TODO: can this ack also come from a bpt:gps event */
@@ -49,8 +53,9 @@ typedef enum {
   EVENT_PROBE_CONTROLLER   = ((uint8_t)0x07), /* this is a special event a remote device can send to probe the controller */
   EVENT_TEST               = ((uint8_t)0x08), /* when the controller is in test mode, all btp:event's use this code */
   EVENT_SERIAL_COMMAND     = ((uint8_t)0x09), /* a command was received via the serial interface */
-  EVENT_ERROR              = ((uint8_t)0x0A), /* TODO: triggered when...  */
-  EVENT_HARDWARE_FAULT     = ((uint8_t)0x0B) /* TODO: can this be trapped? */
+  EVENT_STATUS_UPDATE      = ((uint8_t)0x0A), /* a status update of the device. Triggered when calling bpt:status */
+  EVENT_ERROR              = ((uint8_t)0x0B), /* TODO: triggered when...  */
+  EVENT_HARDWARE_FAULT     = ((uint8_t)0x0C) /* TODO: can this be trapped? */
 } application_event_t;
 
 
@@ -63,7 +68,7 @@ typedef enum {
 typedef enum {
   /* Public states */
   STATE_OFFLINE          = ((uint8_t)0x01),
-  STATE_DEACTIVATED      = ((uint8_t)0x02),
+  STATE_STOPPED          = ((uint8_t)0x02),
   STATE_RESET            = ((uint8_t)0x03),
   STATE_ARMED            = ((uint8_t)0x04),
   STATE_DISARMED         = ((uint8_t)0x05),
@@ -95,9 +100,9 @@ typedef enum {
     Puts the controller into testing mode to permit mocking
     states such as the device's GPS coordinates and wake modes.
 
-    In this mode all bpt:event event are of type EVENT_TEST
+    In this mode all bpt:event event are of type EVENT_TEST //TODO: is this true?
   */
-  CONTROLLER_MODE_TEST          = ((uint8_t)0x03),
+  CONTROLLER_MODE_TEST          = ((uint8_t)0x03)
 } controller_mode_t;
 
 
