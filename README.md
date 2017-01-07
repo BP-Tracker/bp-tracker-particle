@@ -49,7 +49,7 @@ Usage
 The firmware can be flashed on the hardware using the particle cli:
 
 ```sh
-particle compile electron ./electron
+particle compile electron --target 0.5.3 ./electron
 particle flash --serial firmware_electron_xxxxxxxxxxxxx.bin
 ```
 
