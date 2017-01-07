@@ -12,6 +12,7 @@ var bpt = new BPTSerial({ baud: 9600, monitor: false });
  * @type {Number} Time in ms
  */
 var choiceDelay = 500;
+var RUN_SETUP_COMMANDS = false;
 
 var mainChoices = [
   'bpt:ack',
@@ -268,5 +269,8 @@ function callStatePrompt(){
   });
 }
 
-runSetupCommands();
+
+if(RUN_SETUP_COMMANDS){
+  runSetupCommands();
+}
 callFunctionPrompt();
