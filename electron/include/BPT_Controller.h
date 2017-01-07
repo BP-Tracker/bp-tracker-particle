@@ -74,7 +74,7 @@ typedef struct {
 #define SEQUENTIAL_PUBLISH_COOLDOWN 5000
 
 /*
-  The minimum elepased time in ms before processing
+  The minimum elapased time in ms before processing
   the ack event queue
 */
 #define CHECK_ACK_QUEUE_FREQUENCY 5000
@@ -269,6 +269,9 @@ class BPT_Controller: public BPT {
     int getAcceleration(accel_t *t);
 
     bool hasException();
+
+    // Is the controller armed or waiting to rearm (i.e not stopped or paused)?
+    bool isArmed();
 
     const char* getException(bool reset = false);
 

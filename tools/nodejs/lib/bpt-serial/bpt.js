@@ -7,7 +7,7 @@ BPT.prototype = {
   /* controller states */
   STATES: {
     STATE_OFFLINE              : 0x01,
-    STATE_DEACTIVATED          : 0x02,
+    STATE_STOPPED              : 0x02,
     STATE_RESET                : 0x03,
     STATE_ARMED                : 0x04,
     STATE_DISARMED             : 0x05,
@@ -50,8 +50,9 @@ BPT.prototype = {
     EVENT_PROBE_CONTROLLER : 0x07,
     EVENT_TEST             : 0x08,
     EVENT_SERIAL_COMMAND   : 0x09,
-    EVENT_ERROR            : 0x0A,
-    EVENT_HARDWARE_FAULT   : 0x0B,
+    EVENT_STATUS_UPDATE    : 0x0A,
+    EVENT_ERROR            : 0x0B,
+    EVENT_HARDWARE_FAULT   : 0x0C,
   },
 
   /* controller modes */

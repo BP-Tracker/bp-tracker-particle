@@ -183,12 +183,12 @@ void BPT_Controller::loop(void) { //TODO
         }
       }
       break; // end of actived state
-    case STATE_DEACTIVATED:
+    case STATE_STOPPED:
 
       // clears any pending publish events and waits here indefinitely
       // for a state change.
 
-      if(pState != STATE_DEACTIVATED){
+      if(pState != STATE_STOPPED){
          // reset all pertinent state variables because the controller can
          // jump to any of the pubic states
          _requestGpsSent = false;
@@ -204,12 +204,14 @@ void BPT_Controller::loop(void) { //TODO
          publishEventCount = 0;
          _publishEventFront = 0;
 
-         setState(STATE_DEACTIVATED, true, 0, false);
+         setState(STATE_STOPPED, true, 0, false);
       }
 
       break;
 
     case STATE_OFFLINE: // go into deep sleep
+
+      //TODO: is this complete?
 
       if( publishEventCount == 0){
         // wait at least until the current queue clears, ignoring ack events
@@ -342,11 +344,11 @@ void BPT_Controller::loop(void) { //TODO
     case STATE_RESUMED:
 
       if(pState == STATE_PAUSED){
-        setState(_resumePreviousState, true, 0); // don't publish this state change
-      }else if(pState == STATE_DEACTIVATED){
-        setState(STATE_ACTIVATED, true, 0);
+        setState(_resumePreviousState, true, 1); // TODO: publish change?
+      }else if(pState == STATE_STOPPED){
+        setState(STATE_ACTIVATED, true, 1);
       }else{
-        setState(pState, true, 0); // got to state without going through pasued
+        setState(pState, true, 1); // got to state without going through pasued
       }
 
       break;
@@ -411,6 +413,19 @@ bool BPT_Controller::receive(gps_coord_t *coord, uint8_t deviceNumber){
 
   Serial.printf("controller: received remote GPS [lat=%f][lon=%f][date=%i]\n",
     c->coord.lat, c->coord.lon, c->datetime);
+
+  return true;
+}
+
+// TODO: what about STATE_ONLINE_WAIT?
+// TODO: what about STATE_PANIC once all the events have been sent?
+bool BPT_Controller::isArmed(void){
+
+  if(cState == STATE_PAUSED || cState == STATE_STOPPED
+      || cState == STATE_RESET || cState == STATE_RESET_WAIT
+      || cState == STATE_OFFLINE){
+    return false;
+  }
 
   return true;
 }
@@ -722,10 +737,9 @@ int BPT_Controller::_processPublishEvent(){
   while(published < MAX_SEQUENTIAL_PUBLISH && publishEventCount > 0){
     publish_event_t *t = &_publishEventQueue[_publishEventFront];
 
-    /*
     Particle.publish("bpt:event",
-        String::format("%u,%u,%s", t->ackRequired, t->event, t->data), 60, PRIVATE);
-    */
+        String::format("%u,%u,%s", t->event, t->retryCount, t->data), 60, PRIVATE);
+
     //TODO: check for correctness
     if(strlen(t->data) > 0){
       Serial.printf("PUBLISH[bpt:event~%u,%i,%s]\n", t->event, t->retryCount, t->data);
