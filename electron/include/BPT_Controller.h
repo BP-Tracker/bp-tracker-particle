@@ -128,7 +128,7 @@ typedef struct {
 #define GPS_ACQUISITION_TIMEOUT 36000
 
 // Geofence radius in meters
-#define DEFAULT_GEOFENCE_RADIUS 500
+#define DEFAULT_GEOFENCE_RADIUS ((float)500)
 
 /*
   The amount of time (in sec) the device is stationary
@@ -207,7 +207,7 @@ typedef struct {
   See also SLEEP_STATE_PERIOD and PROP_SLEEP_WAKEUP_STANDBY property.
   5 mins = 5 * 60 = 300 TODO: tune later
  */
-#define DEFAULT_SLEEP_WAKEUP_IDLE_STANDBY 120
+#define DEFAULT_SLEEP_WAKEUP_IDLE_STANDBY ((int)120)
 
 class BPT_Controller: public BPT {
 
@@ -273,6 +273,25 @@ class BPT_Controller: public BPT {
     // Is the controller armed or waiting to rearm (i.e not stopped or paused)?
     bool isArmed();
 
+    /**
+     * Attempts to set the property via its string representation.
+     *
+     * Calls the updateLocalProperty on the BPT class instance that
+     * first registered the property.
+     *
+     * @param  prop       the property
+     * @param  value      the property value in string form
+     * @param  persistent should the update be persistent across device reset?
+     * @return            true when the update succeeded. When false, call
+     *                    getException to get the reason.
+     */
+    bool setProperty(application_property_t prop, String value,
+                bool persistent);
+
+    // overrides BPT::updateLocalProperty virtual function
+    virtual bool updateLocalProperty(BPT_Storage *storage,
+                    application_property_t prop, String value, bool persistant);
+
     const char* getException(bool reset = false);
 
     BPT_GPS gpsModule;
@@ -326,6 +345,8 @@ class BPT_Controller: public BPT {
 
     // uses GPS and accelerometer as fallback
     int _isMoving();
+
+    bool _registerProps();
 
     // returns and logs the controller message: TODO
     void _logException(const char *msg);

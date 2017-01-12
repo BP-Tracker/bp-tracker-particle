@@ -2,13 +2,34 @@ Change Log
 ==========
 Changes are documented here.
 
+
+[v0.0.5] - Jan 11, 2017
+-------------------------
+### Added
+  - functionality to get the controller software version
+  - `bpt:status` publishes a `bpt:event` event instead of `bpt:status`
+    - changes to input and output format
+  - save and retrieve application properties via `bpt:register`
+  - functionality to `bpt:reset`
+  - (internal) controller function `isArmedAndMonitoring`  
+  - (internal) BPT_Storage member to application_ctx_t
+
+### Fixed
+  - (internal) rename `STATE_DEACTIVATED` to `STATE_STOPPED`
+  - (internal) do not publish internal state change events on bootup
+  - (internal) restructure BPT_Storage class
+  - (internal) increased serial command buffer size to 128
+
+### Known Issues
+  - in `STATE_PAUSED`, the controller sometimes forgets which state to resume into
+
 [v0.0.4] - Nov 11, 2016 - First stable release
 -------------------------
 ### Added
   - test controller functions
   - serial command and monitoring support
     - nodejs interactive-cli and serial-monitor apps
-  - cloud functions: bpt:probe, btp:test, and btp:reset
+  - cloud functions: bpt:probe, bpt:test, and bpt:reset
   - (internal) new data type: test_input_t
   - (internal) hasMoved and isMoving functions to BPT_Accel and BPT_GPS
   - (internal) BPT_GPS::getGpsCoord now returns the age the coordinate was polled
@@ -22,7 +43,7 @@ Changes are documented here.
   - code cleanup
 
 ### Known Issues
-  - after restet the controller doesn't correctly capture the first serial command
+  - after reset the controller doesn't correctly capture the first serial command
 
 
 [v0.0.3] - Oct 29, 2016
@@ -49,7 +70,7 @@ Changes are documented here.
   - first version (wip)
   - add logic to GPS_MT3339 module
 
-
+[v0.0.5]: https://github.com/BP-Tracker/bp-tracker-particle/releases/tag/v0.0.5
 [v0.0.4]: https://github.com/BP-Tracker/bp-tracker-particle/releases/tag/v0.0.4
 [v0.0.3]: https://github.com/BP-Tracker/bp-tracker-particle/releases/tag/v0.0.3
 [v0.0.2]: https://github.com/BP-Tracker/bp-tracker-particle/releases/tag/v0.0.2

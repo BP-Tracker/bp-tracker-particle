@@ -16,9 +16,6 @@
 
 #define MODULE_STATUS_MSG_MAX_LENGTH 128
 
-//#define MODULE_GPS		          1
-//#define MODULE_ACCELEOMETER     2
-
 typedef struct {
   uint16_t status;
   char message[MODULE_STATUS_MSG_MAX_LENGTH];
@@ -65,10 +62,7 @@ class BPT_Module: public BPT {
 
     void setStatusMsg(const char *msg);
 
-    // returns the type of module
-
     mod_status_t mod_status;
-
 };
 
 #endif

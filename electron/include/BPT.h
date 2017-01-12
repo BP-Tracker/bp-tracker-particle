@@ -17,27 +17,11 @@
 
 // Global defines go here
 
-/** update this when new properties are added */
-#define NUM_APPLICATION_PROPERTIES 6
-/*
-  NB: Do not change the order (value is a index into an array)
-  These can be updated through the bpt:register" cloud function.
-*/
-typedef enum {
-  PROP__RESERVED            = (0), /* do not use */
-  PROP_CONTROLLER_MODE      = (1), /* */
-  PROP_GEOFENCE_RADIUS      = (2), /* */
-  PROP_ACCEL_THRESHOLD      = (3), /* */
-  PROP_ACK_ENABLED          = (4), /* set false to disable ack */
-  PROP_SLEEP_WAKEUP_STANDBY = (5) /* used when device is permitted to go into sleep. */
-} application_property_t;
-
-
 /* test data types for the controller in the CONTROLLER_MODE_TEST mode */
 typedef enum {
-  TEST_INPUT_GPS        = (1), /* sets the GPS coordinate of device. format: lat,lon */
-  TEST_INPUT_AUTO_GPS   = (2), /* TODO: like TEST_INPUT_GPS expect the coordinate is arbitrarily chosen */
-  TEST_INPUT_ACCEL_INT  = (3)  /* TODO: triggers a 'wake' event on the accelerometer */
+  TEST_INPUT_GPS        = ((uint8_t)1), /* sets the GPS coordinate of device. format: lat,lon */
+  TEST_INPUT_AUTO_GPS   = ((uint8_t)2), /* TODO: like TEST_INPUT_GPS expect the coordinate is arbitrarily chosen */
+  TEST_INPUT_ACCEL_INT  = ((uint8_t)3)  /* TODO: triggers a 'wake' event on the accelerometer */
 } test_input_t;
 
 
@@ -84,6 +68,9 @@ typedef enum {
   STATE_SLEEP            = ((uint8_t)0x0D)
 } controller_state_t;
 
+
+#define NUM_CONTROLLER_MODES 3
+
 typedef enum {
   /*
     The default mode, uses accelerometer for power saving
@@ -112,8 +99,8 @@ typedef struct  {
   external_device_t *devices; //array of devices
   uint8_t device_count;
   controller_mode_t mode;
+  BPT_Storage *storage;
 } application_ctx_t;
-
 
 typedef struct {
   float lat; // in degrees
@@ -134,7 +121,6 @@ typedef enum {
 } distance_calc_t;
 
 
-// base class
 class BPT {
 
    public:
@@ -143,32 +129,46 @@ class BPT {
 
     ~BPT();
 
-    bool registerProperty(application_property_t prop, BPT *owner);
+    template<typename T>
+    bool registerProperty(application_property_t prop, T defaultValue,
+                                          bool _forceDefault=false){
 
+        return applicationCtx->storage->registerProperty(
+                                prop, defaultValue, this, _forceDefault);
+    }
+
+    template<typename T>
+    bool getProperty(application_property_t prop, T& destination){ //TODO
+      return applicationCtx->storage->getProperty(prop, destination);
+    }
+
+    /**
+      Subclasses override this method and support the properties
+      they explicitly register
+    **/
+    virtual bool updateLocalProperty(BPT_Storage* storage,
+                            application_property_t prop, String value,
+                            bool persistent=true){
+      return false;
+    }
+
+    application_ctx_t *applicationCtx;
+};
+
+#endif
+
+
+
+
+
+// template<typename T>
+// T getProperty2(application_property_t prop, T defaultValue){ //TODO
+//
+//   return defaultValue;
+// }
 
     // template<class T> //TODO
     // bool registerProperty(application_property_t prop, BPT *owner,
     // 	T minValue, T maxValue){
     // 		return false;
     // } or use a function pointer to get the min/max?
-
-    template<class T>
-    bool saveProperty(application_property_t prop, T& value){ //TODO
-
-      return false;
-    }
-
-    template<class T>
-    T getProperty(application_property_t prop, T defaultValue){ //TODO
-
-      return defaultValue;
-    }
-
-    static BPT_Storage storage;
-    application_ctx_t *applicationCtx;
-
-  private:
-
-};
-
-#endif

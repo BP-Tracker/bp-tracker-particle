@@ -3,6 +3,15 @@
 #define TIME_DELTA(t) (int)(millis() - (t))
 #define TIME_DELTA_SEC(t) (int)((millis() - (t)) / 1000)
 
+/**
+ * NB: update this on a new release.
+ *
+ * Do not alter the size (see PROP_CONTROLLER_VERSION)
+ */
+//const uint8_t CONTROLLER_VERSION[3] = {0, 0, 5};
+//TODO: figure out how to save uint8_t[3] to storage
+const uint8_t CONTROLLER_VERSION = 005;
+
 BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   : BPT(applicationCtx),
     gpsModule(BPT_GPS(applicationCtx)),
@@ -32,18 +41,9 @@ BPT_Controller::BPT_Controller(application_ctx_t *applicationCtx)
   //TODO: initialize buffers
 }
 
+
 void BPT_Controller::setup(void) {
-
-  //TODO: check result
-  registerProperty(PROP_CONTROLLER_MODE, this);
-  registerProperty(PROP_ACK_ENABLED, this);
-  registerProperty(PROP_GEOFENCE_RADIUS, this);
-  registerProperty(PROP_SLEEP_WAKEUP_STANDBY, this);
-
-  _ackEventsEnabled = getProperty(PROP_ACK_ENABLED, true);
-  _geoFenceRadius = getProperty(PROP_GEOFENCE_RADIUS, DEFAULT_GEOFENCE_RADIUS);
-  _sleepWakeupStandy = getProperty(PROP_SLEEP_WAKEUP_STANDBY, DEFAULT_SLEEP_WAKEUP_IDLE_STANDBY );
-  cMode = getProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_TEST); //TODO: change later
+  _registerProps();
   cState = STATE_ONLINE_WAIT;
 
   applicationCtx->mode = cMode;
@@ -84,7 +84,7 @@ void BPT_Controller::loop(void) { //TODO
   switch(cState){
     case STATE_ONLINE_WAIT:
       if(Particle.connected()){
-        setState(STATE_RESET, true);
+        setState(STATE_RESET, true, 0); //TODO: don't publish?
       }
       break;
 
@@ -106,7 +106,7 @@ void BPT_Controller::loop(void) { //TODO
 
         if( applicationCtx->mode == CONTROLLER_MODE_TEST
             && pState != STATE_RESUMED){ // in TEST_MODE go to paused state
-          setState(STATE_PAUSED, true);
+          setState(STATE_PAUSED, true, 0); // TODO: don't publish state change?
         }else{
           setState(STATE_ACTIVATED, true);
         }
@@ -355,6 +355,30 @@ void BPT_Controller::loop(void) { //TODO
   }
 }
 
+bool BPT_Controller::_registerProps(){
+  bool s = true;
+  s &= registerProperty(PROP_CONTROLLER_VERSION, CONTROLLER_VERSION, true); // force default
+  s &= registerProperty(PROP_CONTROLLER_MODE, CONTROLLER_MODE_TEST); //TODO: change later
+  s &= registerProperty(PROP_ACK_ENABLED, true);
+  s &= registerProperty(PROP_GEOFENCE_RADIUS, DEFAULT_GEOFENCE_RADIUS);
+  s &= registerProperty(PROP_SLEEP_WAKEUP_STANDBY,
+                          DEFAULT_SLEEP_WAKEUP_IDLE_STANDBY);
+  if(!s){
+    _logException("could not register properties");
+  }
+
+  bool r = true;
+  r &= getProperty(PROP_ACK_ENABLED, _ackEventsEnabled);
+  r &= getProperty(PROP_GEOFENCE_RADIUS, _geoFenceRadius);
+  r &= getProperty(PROP_SLEEP_WAKEUP_STANDBY, _sleepWakeupStandy );
+  r &= getProperty(PROP_CONTROLLER_MODE, cMode);
+  if(!r){
+    _logException("could not get properties");
+    s = true;
+  }
+  return s && r;
+}
+
 /**
  * Returns whether or not the device is currently in transit. It uses the
  * GPS module and the accelerometer as a fallback.
@@ -374,19 +398,100 @@ int BPT_Controller::_isMoving(){
 void BPT_Controller::_logException(const char *msg){ //TODO: print to serial?
   _hasException = true;
   strncpy(_exceptionMessage, msg, MAX_EXCEPTION_MSG_LENGTH);
+  _exceptionMessage[MAX_EXCEPTION_MSG_LENGTH] = '\0'; // overflow check
 }
 
 bool BPT_Controller::hasException(){
   return _hasException;
 }
 
+// check hasException before invoking
 const char* BPT_Controller::getException(bool reset){
   if(reset){
     _hasException = false;
-    _exceptionMessage[0] = '\0';
   }
   return _exceptionMessage;
 }
+
+bool BPT_Controller::setProperty(application_property_t prop,
+    String value, bool persistent){
+
+    BPT_Storage *s = applicationCtx->storage;
+
+    if(!s->getProperyStatus(prop, STORAGE_FLAG_IS_REGISTERED)
+            || !s->getProperyStatus(prop, STORAGE_FLAG_UPDATEABLE)
+            || s->getProperyStatus(prop, STORAGE_FLAG_IS_PRIVATE) ){
+
+      _logException("property is private and not updateable");
+      return false;
+     }
+
+     bool result = s->getOwner(prop)->updateLocalProperty(s, prop, value, persistent);
+     if(!result && !_hasException){
+       _logException("could not update property");
+     }
+     return result;
+}
+
+//override
+bool BPT_Controller::updateLocalProperty(BPT_Storage* storage,
+    application_property_t prop, String value, bool persistent){
+
+  bool success = false;
+
+  switch(prop){
+    case PROP_CONTROLLER_MODE: {
+
+      int temp = value.toInt();
+      if(temp < 1 || temp > NUM_CONTROLLER_MODES ){
+        _logException("unknown controller mode");
+        return false;
+      }
+
+      controller_mode_t mode = static_cast<controller_mode_t>(temp);
+      if(persistent){
+        success = storage->setProperty(prop, mode);
+      }
+
+      setMode(mode);
+      reset(false, false); //TODO: reset required?
+
+      break;
+    } case PROP_GEOFENCE_RADIUS: {
+
+      float geoFenceRadius = value.toFloat();
+      if(geoFenceRadius <= 0){
+        _logException("expects an non-zero positive decimal");
+        return false;
+      }
+
+      if(persistent){
+        success = storage->setProperty(prop, geoFenceRadius);
+      }
+      _geoFenceRadius = geoFenceRadius;
+
+      break;
+    } case PROP_SLEEP_WAKEUP_STANDBY: {
+
+      int wakeupStandby = value.toInt();
+      if(wakeupStandby < 0){
+        _logException("expects a positive number");
+        return false;
+      }
+
+      if(persistent){
+        success = storage->setProperty(prop, wakeupStandby);
+      }
+      _sleepWakeupStandy = wakeupStandby;
+
+      break;
+    } default:
+      return BPT::updateLocalProperty(storage, prop, value);
+  }
+
+  return success;
+}
+
 
 int BPT_Controller::getGpsCoord(gps_coord_t *c){
   return gpsModule.getGpsCoord(c);
@@ -489,8 +594,19 @@ bool BPT_Controller::receive(application_event_t e, const char *data,
  * @param props In addition, reset all configurable properties to their defaults
  * @param softReset In addition, issue a software reset
  */
-void BPT_Controller::reset(bool props, bool softReset) { //TODO: complete
+void BPT_Controller::reset(bool props, bool softReset) {
+  applicationCtx->storage->reset(props, true); //TODO: should we de-register here?
 
+  gpsModule.reset();
+  accelModule.reset();
+
+  _registerProps();
+
+  if(softReset){
+    System.reset();
+  }else{
+    setState(STATE_RESET, true);
+  }
 }
 
 /*

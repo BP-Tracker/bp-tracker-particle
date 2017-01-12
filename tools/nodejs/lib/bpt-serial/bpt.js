@@ -32,11 +32,13 @@ BPT.prototype = {
 
  /* application_property_t types */
   APPLICATION_PROPERTIES: {
-    PROP_CONTROLLER_MODE      : 1,
-    PROP_GEOFENCE_RADIUS      : 2,
-    PROP_ACCEL_THRESHOLD      : 3,
-    PROP_ACK_ENABLED          : 4,
-    PROP_SLEEP_WAKEUP_STANDBY : 5
+    INTERNAL_PROP__RESERVED   : 0,
+    PROP_CONTROLLER_VERSION   : 1,
+    PROP_CONTROLLER_MODE      : 2,
+    PROP_GEOFENCE_RADIUS      : 3,
+    PROP_ACCEL_THRESHOLD      : 4,
+    INTERNAL_PROP_ACK_ENABLED : 5, //TODO: internal?
+    PROP_SLEEP_WAKEUP_STANDBY : 6
   },
 
   /* application_event_t events */

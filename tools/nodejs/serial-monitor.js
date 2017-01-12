@@ -75,6 +75,26 @@ function formatEvent(event, data){
     if(states[data]){
       return states[data];
     }
+  }else if(event == "bpt:register"){
+      var properties = _.invert(BPTSerial.prototype.APPLICATION_PROPERTIES);
+      if(data.length > 0){
+        var tokens = data.split(',');
+        var mode = tokens.shift();
+        var statusStr = tokens.shift() != 1 ? chalk.bold.red("! ") : "";
+
+        if(mode == 1){ //get all properties
+          var formatted = [];
+
+          while(tokens.length > 0){
+            var p = tokens.shift();
+            var v = tokens.shift();
+            var dp = properties[p] ? properties[p].replace("PROP_", "") : p;
+            formatted.push( dp + "->" + v);
+          }
+
+          return statusStr + formatted.join(",");
+        }
+      }
   }
   return data;
 }

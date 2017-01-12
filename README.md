@@ -29,10 +29,11 @@ Features
 -------
   * Automatic device arming and disarming
   * State change notifications and `PANIC` settings
-  * Persistent configuration settings (_in progress_)
+  * Persistent configuration settings
   * GPS polling and low-battery functions
   * Support for multiple remote clients
-  * Serial monitoring and testing
+  * Message delivery handshake
+  * Serial monitoring and testing (via nodejs cli)
 
 
 Requirements
@@ -86,7 +87,7 @@ License
 -------
 
 BP Tracker Firmware is licensed under the [MIT][info-license] license.  
-Copyright &copy; 2016 Derek Benda
+Copyright &copy; 2016-2017 Derek Benda
 
 
 [shield-unstable]: https://img.shields.io/badge/build-unstable-red.svg

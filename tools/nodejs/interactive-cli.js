@@ -67,26 +67,96 @@ function reportDone(command){
   console.log(chalk.yellow("! " + command));
 }
 
-function callRegisterPrompt(){ //TODO
-  callFunctionPrompt();
+function callRegisterPrompt(){
+  inquirer.prompt([{
+    type: 'rawlist',
+    message: chalk.bold.white('Choose an option'),
+    name: 'bpt_opt',
+    choices: [
+      "Retrieve Properties",
+      "Register Device",
+      "Set Property Temporily",
+      "Set Property",
+      "Cancel"
+    ]
+  },{
+    type: 'rawlist',
+    message: chalk.bold.white('Choose a property'),
+    name: 'bpt_app_property_id',
+    pageSize: _.keys(bpt.APPLICATION_PROPERTIES).length,
+    choices: _.keys(bpt.APPLICATION_PROPERTIES).filter(
+        function(v){
+          return !v.startsWith("INTERNAL");
+        }
+      ),
+    when: function(ans){
+      return ans.bpt_opt.startsWith("Set Property");
+    }
+  },{
+    type: 'input',
+    message: chalk.dim("Enter property value"),
+    name: 'bpt_app_property',
+    when: function(ans){
+      return ans.bpt_opt.startsWith("Set Property")
+    }
+  }]).then(function(ans){
+    if(ans.bpt_opt === "Register Device"){
+      bpt.sendCommand("bpt:register", "0").done(reportDone, reportError);
+
+    }else if(ans.bpt_opt.startsWith("Set Property")){
+
+      var mode = ans.bpt_opt === "Set Property" ? 3 : 2;
+      var cmd = mode + ","
+        + bpt.APPLICATION_PROPERTIES[ans.bpt_app_property_id]
+        + "," + ans.bpt_app_property;
+
+      bpt.sendCommand("bpt:register", cmd ).done(reportDone, reportError);
+    }else if(ans.bpt_opt === "Retrieve Properties" ){
+        bpt.sendCommand("bpt:register", "1").done(reportDone, reportError);
+    }
+
+    setTimeout(callFunctionPrompt, ans.bpt_opt  == "Cancel" ? 0 : choiceDelay);
+  });
 }
 
 function callResetPrompt(){
   inquirer.prompt([{
     type: 'rawlist',
-    message: chalk.bold.white('Are you sure you want to reset?'),
+    message: chalk.bold.white('Choose an option'),
     name: 'bpt_opt',
     choices: [
-      'Yes',
-      'No',
-      'Cancel'
+      "Reset Controller",
+      "Reset Device",
+      "Reset All Properties",
+      "Cancel"
+    ]
+  },{
+    type: 'rawlist',
+    message: chalk.bold.white('Are you sure you want to reset?'),
+    name: 'bpt_opt_confirm',
+    choices: [
+      'No cancel',
+      'Yes reset'
     ],
-    default: 2
+    when: function(ans){
+      return ans.bpt_opt !== "Cancel"
+    },
+    default: 0
   }]).then(function(ans){
-      if(ans.bpt_opt == 'Yes'){
-        bpt.sendCommand("bpt:reset", "" ).done(reportDone, reportError);
+      var cmd;
+
+      if(ans.bpt_opt === "Reset Device"){
+        cmd = "0,1";
+      }else if(ans.bpt_opt === "Reset All Properties"){
+        cmd = "1,0";
+      }else{
+        cmd = "";
       }
-      setTimeout(callFunctionPrompt, ans.bpt_opt  == "Yes" ? choiceDelay : 0);
+
+      if(ans.bpt_opt_confirm == "Yes reset"){
+        bpt.sendCommand("bpt:reset", cmd ).done(reportDone, reportError);
+      }
+      setTimeout(callFunctionPrompt, ans.bpt_opt  == "Yes reset" ? choiceDelay : 0);
   });
 }
 

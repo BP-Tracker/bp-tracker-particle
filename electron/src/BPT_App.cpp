@@ -7,7 +7,7 @@
   Constants
 *********************************************/
 int ON_BOARD_LED = D7;
-const int SERIAL_COMMAND_BUFFER_SIZE = 64;
+const int SERIAL_COMMAND_BUFFER_SIZE = 128;
 
 //SYSTEM_THREAD(ENABLED); //TODO: is this required?
 
@@ -18,6 +18,7 @@ const int SERIAL_COMMAND_BUFFER_SIZE = 64;
 /*********************************************
   Application variables
 *********************************************/
+BPT_Storage storage;
 extern external_device_t devices[EXTERNAL_DEVICE_COUNT];
 application_ctx_t appCtx;
 gps_coord_t gpsCoord;
@@ -28,6 +29,7 @@ int temp = 0;
 char serialBuffer[SERIAL_COMMAND_BUFFER_SIZE];
 int serialBufferIndex = 0;
 bool serialLatch = true;
+
 
 BPT_Controller controller = BPT_Controller(&appCtx);
 FuelGauge fuelGauge;
@@ -50,25 +52,27 @@ void publish(String name, const char *data){
   Serial.printf("PUBLISH[%s~%s]\n", name.c_str(), data);
 }
 
-
 // override
 void loop(){
   controller.loop();
 
-  if(controller.hasException()){
-    Serial.printf("app: controller exception: %s\n", controller.getException(true) );
-  }
-
-  if (millis() - stateTime > 10000) {
+  if (millis() - stateTime > 20000) {
     stateTime = millis();
 
+    if(controller.hasException()){
+      Serial.printf("app: controller exception: %s\n", controller.getException(false) );
+    }
 
-    //for(int i = 0; i < SERIAL_COMMAND_BUFFER_SIZE; i++){
-    //  Serial.print(serialBuffer[i]);
-    //}
-   //Serial.println();
+   /*
+   uint8_t v[3] = {6,2,4};
+   bool r =  storage.registerProperty(
+     PROP_CONTROLLER_VERSION, v, &controller, true);
+   uint8_t w[3];
 
+   bool s = storage.getProperty(PROP_CONTROLLER_VERSION, w);
 
+   Serial.printf("register = %u|%u,%u,%u,", v[0], r, s, w[0]);
+   */
 
     Serial.printf("app: [state=%u][mode=%u][publishEvent=%u]",
       controller.getState(), controller.getMode(), controller.publishEventCount);
@@ -77,7 +81,6 @@ void loop(){
       controller.ackEventCount, controller.totalPublishedEvents,
       controller.totalDroppedAckEvents);
   }
-
 }
 
 /*
@@ -257,27 +260,91 @@ int getDiagnosticFn(String command){ // TODO
 /*
   Registers device or application properties
   Command syntax:
-    0                                 // get all properties
-    1,application_property_t          // get specific property
-    2,application_property_t,[data]   // set property
+    0                                 // register device; //TODO
+    1                                 // get all properties
+    2,application_property_t,[data]   // set property non-persistently (for testing)
+    3 application_property_t,[data]   // set property
 
   Results are returned in a btp:register event
   Output structure:
-    0 -> application_property_t,value[,application_property_t,value][,...]
-    1 -> application_property_t,value
-    2 -> no event created, TODO: change this?
+    0 -> no event created
+    1 -> 1,status,application_property_t,value[,application_property_t,value][,...]
+    2 -> 2,status,application_property_t,value or error
+    3 -> 3,status,application_property_t,value or error
 
-  Returns 0 on success or -1 if an error occured or property value is invalid
-
+  Returns 0 on success or -1 if an error occured
+  NB: calling mode 1 will only retrieve the properties values set in EEPROM
 */
 int registerFn(String command){
-  //TODO
-  return -1;
+
+  int sep = command.indexOf(',');
+  int mode = atoi(command.substring(0, sep));
+
+  if(command.length() <= 0 || mode > 3){
+    return -1;
+  }
+
+  if(mode == 0){ //register device TODO?
+    return -1;
+  }else if(mode == 1){ // get all properties
+    controller_mode_t cMode;
+    uint8_t accelThreshold;
+    uint8_t ackEnabled;
+    int wakeupStandby;
+    float geoFence;
+    uint8_t vers;
+
+    bool res = true;
+    res &= storage.getProperty(PROP_CONTROLLER_VERSION, vers);
+    res &= storage.getProperty(PROP_CONTROLLER_MODE, cMode);
+    res &= storage.getProperty(PROP_GEOFENCE_RADIUS, geoFence);
+    res &= storage.getProperty(PROP_ACCEL_THRESHOLD, accelThreshold);
+    res &= storage.getProperty(PROP_ACK_ENABLED, ackEnabled);
+    res &= storage.getProperty(PROP_SLEEP_WAKEUP_STANDBY, wakeupStandby);
+
+    uint8_t major = vers / 100;
+    vers = vers % 100;
+    uint8_t mid = vers / 10;
+    vers = vers % 10;
+    uint8_t minor = vers;
+
+    publish("bpt:register",
+       String::format("%u,%u,%u,%u.%u.%u,%u,%u,%u,%.2f,%u,%u,%u,%u,%u,%i",
+            mode,
+            res,
+            PROP_CONTROLLER_VERSION, major, mid, minor,
+            PROP_CONTROLLER_MODE, cMode,
+            PROP_GEOFENCE_RADIUS, geoFence,
+            PROP_ACCEL_THRESHOLD, accelThreshold,
+            PROP_ACK_ENABLED, ackEnabled,
+            PROP_SLEEP_WAKEUP_STANDBY, wakeupStandby
+          ));
+
+    return res == true ? 0 : -1;
+  }
+
+  // modes 3,4 - set single property
+  int propSep = command.indexOf(',', sep + 1);
+  int property = atoi(command.substring(sep + 1, propSep));
+  String value = command.substring(propSep + 1);
+  application_property_t prop = static_cast<application_property_t>(property);
+
+  bool persistent = mode == 3 ? true : false;
+  bool res = controller.setProperty( prop, value, persistent);
+
+  if( controller.hasException() ){
+    const char *e = controller.getException(true);
+    publish("bpt:register", String::format("%u,%u,%u,%s", mode, res, prop, e));
+  }else{
+    publish("bpt:register", String::format("%u,%u,%u", mode, res, prop));
+  }
+
+  return res == true ? 0 : -1;
 }
 
 /*
   Resets the controller to the initial state
-  Format: [<reset_properties>][,<hard_reset>]
+  Format: [<reset_properties>][,<soft_reset>]
   Default is 0,0 if no data is passed in
  */
 int resetFn(String command){ //TODO
@@ -472,6 +539,7 @@ void setup() {
 
   pinMode(ON_BOARD_LED, OUTPUT);
   appCtx.devices = devices;
+  appCtx.storage = &storage;
 
   controller.setup();
 

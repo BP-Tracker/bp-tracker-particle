@@ -1,6 +1,7 @@
-/* Logic borrowed from particle.io's AssetTracker library
-  	(https://github.com/spark/AssetTracker)
-*/
+/**
+ * Logic borrowed from particle.io's AssetTracker library
+ * See https://github.com/spark/AssetTracker
+ */
 #include "BPT_Accel_LIS3DH.h"
 
 BPT_Accel_LIS3DH::BPT_Accel_LIS3DH(application_ctx_t *applicationCtx)
@@ -48,6 +49,7 @@ bool BPT_Accel_LIS3DH::update(void){
   return true;
 }
 /* Resets any interrupts (if it was triggered) */
+// TODO: also re-register property?
 bool BPT_Accel_LIS3DH::reset(void){   //TODO
   if(getStatus(MOD_STATUS_INTERRUPT)){
     driver.clearInterrupt(true);
@@ -67,10 +69,14 @@ void BPT_Accel_LIS3DH::init(void){
     return;
   }
 
-  registerProperty(PROP_ACCEL_THRESHOLD, this);
+  uint8_t threshold = DEFAULT_PROP_ACCEL_THRESHOLD;
+  registerProperty(PROP_ACCEL_THRESHOLD, threshold);
 
-  uint8_t threshold = getProperty(
-    PROP_ACCEL_THRESHOLD, DEFAULT_PROP_ACCEL_THRESHOLD);
+  bool success = getProperty(PROP_ACCEL_THRESHOLD, threshold);
+  if(!success){
+    const char *m = "cannot get accel_threshold property using default";
+    setStatus(MOD_STATUS_ERROR, m);
+  }
 
   driver.begin(LIS3DH_DEFAULT_ADDRESS);
 
@@ -85,6 +91,30 @@ void BPT_Accel_LIS3DH::init(void){
   driver.setupLowPowerWakeMode(threshold);
 
   setStatus(MOD_STATUS_ONLINE);
+}
+
+//override
+bool BPT_Accel_LIS3DH::updateLocalProperty(BPT_Storage* storage,
+    application_property_t prop, String value, bool persistent){
+
+  bool success = true;
+
+  if( prop != PROP_ACCEL_THRESHOLD ){
+    return BPT_Device_Impl::updateLocalProperty(storage, prop, value);
+  }
+
+  int temp = value.toInt();
+  if(temp < 0 || temp > 16){ // per driver specs
+    return false;
+  }
+
+  uint8_t thres = (uint8_t)temp;
+
+  driver.setupLowPowerWakeMode(thres);
+  if(persistent){
+    success = storage->setProperty(prop, thres);
+  }
+  return success;
 }
 
 void BPT_Accel_LIS3DH::shutdown(void){ //TODO

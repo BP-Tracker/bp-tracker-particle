@@ -4,7 +4,7 @@
 #ifndef BPT_Accel_LIS3DH_h
 #define BPT_Accel_LIS3DH_h
 
-#define DEFAULT_PROP_ACCEL_THRESHOLD 16
+#define DEFAULT_PROP_ACCEL_THRESHOLD ((uint8_t)16)
 
 class BPT_Accel_LIS3DH: public BPT_Device_Impl {
 
@@ -31,6 +31,10 @@ class BPT_Accel_LIS3DH: public BPT_Device_Impl {
 
     // override
     int getIntData(void *accel, int size);
+
+    // override
+    virtual bool updateLocalProperty(BPT_Storage* storage,
+        application_property_t prop, String value, bool persistent);
 
 
   protected:
