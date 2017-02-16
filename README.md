@@ -17,7 +17,7 @@ Table Of Contents
 - [Usage](#usage)
 - [Cloud API](#cloud-api)
 - [Support & Releases](#support-&-releases)
-- [Additional Resources](#additional-resources)
+- [Additional Tools](#additional-tools)
 - [License](#license)
 
 Intro
@@ -57,8 +57,8 @@ particle flash --serial firmware_electron_xxxxxxxxxxxxx.bin
 Then you can make queries on the API to configure and interrogate the device.
 For example:
 
-```
-// get the GPS coordinates in a bpt:gps event
+```sh
+# get the GPS coordinates in a bpt:gps event
 curl https://api.particle.io/v1/devices/<device_name>/bpt:gps -d access_token=<token>
 
 ```
@@ -72,10 +72,32 @@ that can be called on the device.
 Work in progress...
 
 
-Additional Resources
+Additional Tools
 -----
 
-...
+#### Serial Monitor
+
+Prints cloud events published to the devcie on the command line via usb.
+
+```sh
+cd tools/nodejs
+node serial-monitor.js
+```
+
+<img width="400px" src="https://rawgit.com/BP-Tracker/bp-tracker-particle/master/docs/src/assets/images/serial-monitor.png" alt="Serial monitor screenshot" />
+
+#### Interactive CLI
+
+Publishes events to the device via usb as if the command had arrived from the cloud.
+
+```sh
+cd tools/nodejs
+node interactive-cli.js
+```
+
+<img width="400px" src="https://rawgit.com/BP-Tracker/bp-tracker-particle/master/docs/src/assets/images/interactive-cli.png" alt="Interactive cli screenshot" />
+<img width="400px" src="https://rawgit.com/BP-Tracker/bp-tracker-particle/master/docs/src/assets/images/interactive-cli-2.png" alt="Interactive cli screenshot" />
+
 
 Support and Releases
 -----
