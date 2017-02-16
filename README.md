@@ -77,7 +77,7 @@ Additional Tools
 
 #### Serial Monitor
 
-Prints cloud events published to the devcie on the command line via usb.
+Prints events published to the device on the command line via serial usb.
 
 ```sh
 cd tools/nodejs
@@ -88,7 +88,7 @@ node serial-monitor.js
 
 #### Interactive CLI
 
-Publishes events to the device via usb as if the command had arrived from the cloud.
+Publishes events to the device via serial usb as if the command had arrived from the cloud.
 
 ```sh
 cd tools/nodejs
