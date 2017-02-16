@@ -7,11 +7,9 @@ Provides a particle.io [cloud API][cloudapi] to monitor and receive alerts when 
 [![MIT licensed][shield-license]](#)
 
 
-
 Table Of Contents
 -----------------
 
-- [Intro](#intro)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Usage](#usage)
@@ -20,10 +18,6 @@ Table Of Contents
 - [Additional Tools](#additional-tools)
 - [License](#license)
 
-Intro
--------
-
-TODO
 
 Features
 -------
@@ -69,17 +63,17 @@ Cloud API
 BP tracker utilizes the [Particle][particleio] cloud service to interface with client applications. The table below summaries all the functions
 that can be called on a device running this firmware.
 
-| Event          | Function |
-| -------------- | -------- |
-| `bpt:ack`      | Acknowledges certain events produced by the controller |
-| `bpt:diag`     | Reports diagnostic information |
-| `bpt:gps`      | Returns the geolocation of the device |
-| `bpt:probe`    | Wakes up the controller to perform any pending actions |
-| `bpt:register` | Register remote devices and configure settings |
-| `bpt:reset`    | Resets the device |
-| `bpt:state`    | Returns the controller's current state |
-| `bpt:status`   | Reports the status of the device |
-| `bpt:test`     | Puts the controller into testing mode |
+| Event        | Function |
+| ------------ | -------- |
+| bpt:ack      | Acknowledges certain events produced by the controller |
+| bpt:diag     | Reports diagnostic information |
+| bpt:gps      | Returns the geolocation of the device |
+| bpt:probe    | Wakes up the controller to perform any pending actions |
+| bpt:register | Register remote devices and configure settings |
+| bpt:reset    | Resets the device |
+| bpt:state    | Returns the controller's current state |
+| bpt:status   | Reports the status of the device |
+| bpt:test     | Puts the controller into testing mode |
 
 Consult the [documentation][firmwaredocs] (in progress) for more information.
 
