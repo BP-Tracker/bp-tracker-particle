@@ -66,18 +66,30 @@ curl https://api.particle.io/v1/devices/<device_name>/bpt:gps -d access_token=<t
 Cloud API
 -----
 
-BP tracker utilizes particle.io's cloud service to interface with client applications. The table below summaries all the functions
-that can be called on the device.
+BP tracker utilizes the [Particle][particleio] cloud service to interface with client applications. The table below summaries all the functions
+that can be called on a device running this firmware.
 
-Work in progress...
+| Event          | Function |
+| -------------- | -------- |
+| `bpt:ack`      | Acknowledges certain events produced by the controller |
+| `bpt:diag`     | Reports diagnostic information |
+| `bpt:gps`      | Returns the geolocation of the device |
+| `bpt:probe`    | Wakes up the controller to perform any pending actions |
+| `bpt:register` | Register remote devices and configure settings |
+| `bpt:reset`    | Resets the device |
+| `bpt:state`    | Returns the controller's current state |
+| `bpt:status`   | Reports the status of the device |
+| `bpt:test`     | Puts the controller into testing mode |
 
+Consult the [documentation][firmwaredocs] (in progress) for more information.
 
 Additional Tools
 -----
 
 #### Serial Monitor
 
-Prints events published to the device on the command line via serial usb.
+Monitors and prints on the command line events published to the device.
+Using the hardware serial interface the firmware prints out the event using `Serial.print`.
 
 ```sh
 cd tools/nodejs
@@ -115,7 +127,8 @@ Copyright &copy; 2016-2017 Derek Benda
 [shield-unstable]: https://img.shields.io/badge/build-unstable-red.svg
 [shield-license]: https://img.shields.io/badge/license-MIT-blue.svg
 
-[particlecli]:https://docs.particle.io/guide/getting-started/connect/electron/
+[firmwaredocs]: https://bp-tracker.github.io/bp-tracker-particle
+[particlecli]: https://docs.particle.io/guide/getting-started/connect/electron/
 [particleio]: https://www.particle.io/
 [electron]: https://www.particle.io/products/hardware/electron-cellular-dev-kit
 [cloudapi]: https://docs.particle.io/reference/api/
