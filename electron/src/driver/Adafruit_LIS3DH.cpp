@@ -368,6 +368,19 @@ uint8_t Adafruit_LIS3DH::clearInterrupt(bool doClear) {
 	return int1_src;
 }
 
+/**************************************************************************/
+/*!
+   NB: particle.io function
+    @brief  Disable interrupt 1 (INT1)
+*/
+/**************************************************************************/
+
+bool Adafruit_LIS3DH::disableInterrupt(void) {
+	writeRegister8(LIS3DH_REG_CTRL5, 0); // Disable Latch Interrupt Request on INT1
+    	writeRegister8(LIS3DH_REG_CTRL3, 0); // Disable INT1
+	return true;
+}
+
 
 /**************************************************************************/
 /*!
