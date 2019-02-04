@@ -197,6 +197,7 @@ class Adafruit_LIS3DH : public Adafruit_Sensor {
 
   bool setupLowPowerWakeMode(uint8_t movementThreshold);
   uint8_t clearInterrupt(bool doClear);
+  bool disableInterrupt(void);
 
   int16_t x, y, z;
   float x_g, y_g, z_g;
